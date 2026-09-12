@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "error-container": "#ffdad6", "on-secondary-container": "#00714e", "primary": "#00355f", "on-primary-fixed": "#001c37", "primary-fixed": "#d2e4ff", "primary-fixed-dim": "#a0c9ff", "inverse-on-surface": "#eef0ff", "on-tertiary-fixed": "#001d31", "on-primary": "#ffffff", "secondary-container": "#82f5c1", "secondary-fixed-dim": "#68dba9", "on-tertiary-container": "#74c1ff", "on-surface": "#131b2e", "on-background": "#131b2e", "on-error-container": "#93000a", "surface": "#faf8ff", "secondary-fixed": "#85f8c4", "outline-variant": "#c2c7d1", "tertiary-fixed": "#cce5ff", "on-tertiary": "#ffffff", "tertiary": "#003756", "background": "#faf8ff", "on-secondary": "#ffffff", "inverse-surface": "#283044", "surface-tint": "#2d6197", "tertiary-fixed-dim": "#93ccff", "surface-dim": "#d2d9f4", "on-secondary-fixed": "#002114", "tertiary-container": "#004e78", "surface-container-lowest": "#ffffff", "on-tertiary-fixed-variant": "#004b73", "surface-bright": "#faf8ff", "surface-container-low": "#f2f3ff", "on-secondary-fixed-variant": "#005137", "surface-container": "#eaedff", "error": "#ba1a1a", "outline": "#727780", "on-primary-fixed-variant": "#07497d", "on-primary-container": "#8ebdf9", "inverse-primary": "#a0c9ff", "surface-container-high": "#e2e7ff", "surface-variant": "#dae2fd", "on-error": "#ffffff", "on-surface-variant": "#42474f", "surface-container-highest": "#dae2fd", "secondary": "#006c4a", "primary-container": "#0f4c81" }, borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, spacing: { "space-md": "0.75rem", "margin-lg": "2rem", "space-xs": "0.25rem", "gutter-lg": "1.5rem", "space-xl": "1.5rem", "margin": "1rem", "gutter": "1rem", "space-lg": "1rem", "space-sm": "0.5rem" }, fontFamily: { "body-sm": ["Inter"], "body-lg": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "code-mono": ["JetBrains Mono"], "label-sm": ["Inter"], "label-md": ["Inter"], "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"] }, fontSize: { "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "26px", "fontWeight": "600" }], "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "code-mono": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "600" }], "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col flex-1 overflow-y-auto"><div class="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low"><img alt="Logo SGI CASALIMPIA" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VeTp2XUhWy_4lVUnS_eq24zKPiqAOa8MAt-2aMEz385VkTAcAuDMWkXIYMCipxF3WwQnED5QcovIMWJpZQOxp2WLOHGMUv3FOI6OUkGrGmYDxOoYfXFkHZrYphhgGp8jRZsAZ5a3VMJ7vybCppSvuB3o3WYIazXIIK6lOJutHKbrhX7QfEo-ZBRoIZ6GGX0adrV4meB9nogMZfeePRqWaOdiPFX8LAuibs1jjaUrSDLYH9YTVguEcZwTsn"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary leading-none">SGI CASALIMPIA</span><span class="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span></div></div><div class="px-space-xl py-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Menú Principal</span></div><nav class="px-space-md space-y-space-xs flex-1" data-active-classes="bg-primary-container text-on-primary font-headline-sm rounded-lg"><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-body-md text-body-md">Dashboard</span></a><a class="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="inventario-de-activos" href="#"><div class="flex items-center gap-space-md"><span class="material-symbols-outlined text-[20px]">devices</span><span class="font-body-md text-body-md">Inventario de Activos</span></div><span class="font-code-mono text-code-mono bg-surface-container-highest text-primary font-semibold px-space-sm py-0.5 rounded-full">1,428</span></a><div class="pt-space-xs"><div class="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant rounded-lg"><div class="flex items-center gap-space-md"><span class="material-symbols-outlined text-[20px]">assignment_return</span><span class="font-body-md text-body-md font-semibold text-on-surface">Entrega y Recepción</span></div><span class="material-symbols-outlined text-[16px] text-outline">expand_more</span></div><div class="ml-space-lg pl-space-md space-y-space-xs mt-space-xs"><a class="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="nueva-entrega-acta" href="#"><span class="material-symbols-outlined text-[16px]">post_add</span><span class="font-body-sm text-body-sm">Nueva Entrega / Acta</span></a><a class="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="devoluciones" href="#"><span class="material-symbols-outlined text-[16px]">keyboard_return</span><span class="font-body-sm text-body-sm">Devoluciones</span></a><a class="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="historial-entregas" href="#"><span class="material-symbols-outlined text-[16px]">history</span><span class="font-body-sm text-body-sm">Historial</span></a></div></div><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="novedades-y-mantenimiento" href="#"><span class="material-symbols-outlined text-[20px]">build_circle</span><span class="font-body-md text-body-md">Novedades y Mantenimiento</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="gestion-de-usuarios-y-roles" href="#"><span class="material-symbols-outlined text-[20px]">admin_panel_settings</span><span class="font-body-md text-body-md">Gestión de Usuarios y Roles</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="reportes-y-auditoria" href="#"><span class="material-symbols-outlined text-[20px]">verified_user</span><span class="font-body-md text-body-md">Reportes y Auditoría</span></a></nav></div><div class="p-space-lg m-space-md bg-surface-container rounded-xl flex items-center gap-space-md"><div class="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[18px]">verified</span></div><div class="flex flex-col overflow-hidden"><span class="font-label-sm text-label-sm text-primary uppercase font-bold truncate">SGI Conectado</span><span class="font-body-sm text-body-sm text-outline truncate">Auditoría Legal ISO</span></div></div></aside><div class="pl-72 flex flex-col min-h-screen"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-space-xl flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-lg flex-1 max-w-2xl"><div class="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0"><span class="material-symbols-outlined text-[16px] text-secondary">location_on</span><span class="font-label-sm text-label-sm font-semibold truncate">Sede Principal Av. El Dorado #100-80, Bogotá</span></div><div class="relative w-full max-w-md"><span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full h-9 pl-9 pr-space-md bg-surface-container-lowest text-on-surface rounded-lg font-body-sm text-body-sm placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]" placeholder="Buscar activo por serie, placa o modelo..." type="text"/></div></div><div class="flex items-center gap-space-md shrink-0"><button aria-label="Notificaciones" class="relative h-9 w-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span></button><div class="h-6 w-px bg-surface-container-highest"></div><div class="flex items-center gap-space-md pl-space-xs"><div class="flex flex-col text-right hidden sm:flex"><span class="font-label-md text-label-md text-on-surface">Ing. Alexis Cruz</span><span class="font-label-sm text-label-sm text-secondary font-semibold">Administrador TI</span></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q"/></div></div></header><main class="relative pt-16 flex-1 w-full px-gutter-lg pb-space-xl bg-background"><div class="flex flex-col w-full">
+<!-- Header & Metadata Breadcrumb -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md mb-space-lg">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="text-secondary font-semibold">SGI-TI CASALIMPIA</span>
+<span>/</span>
+<span>Asignación de Activos</span>
+<span>/</span>
+<span class="font-code-mono text-primary font-semibold">RF-03 • RF-04</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary font-bold tracking-tight">Nueva Asignación y Entrega de Hardware</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-3xl">Formulario oficial de salida de inventario y generación del Acta de Entrega con valor de custodia para CASALIMPIA S.A.</p>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<div class="flex items-center gap-space-xs bg-surface-container-high px-space-md py-space-xs rounded-full">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Protocolo TI-FO-04 v3.2</span>
+</div>
+<div class="font-code-mono text-code-mono bg-primary-container text-on-primary font-semibold px-space-md py-space-xs rounded-lg shadow-sm">
+        ACT-2026-0382
+      </div>
+</div>
+</div>
+<!-- Stepper Indicator -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm mb-space-lg">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Step 1: Validated -->
+<div class="flex items-center gap-space-md p-space-sm rounded-lg bg-surface-container-low transition-colors">
+<div class="w-9 h-9 rounded-full bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold">Paso 01 • Completado</span>
+<span class="font-headline-sm text-body-md text-on-surface font-semibold truncate">Validación de Empleado</span>
+</div>
+</div>
+<!-- Step 2: Active -->
+<div class="flex items-center gap-space-md p-space-sm rounded-lg bg-surface-container-high transition-colors shadow-sm">
+<div class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 font-headline-sm text-label-md">
+          2
+        </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-primary font-bold">Paso 02 • En Curso</span>
+<span class="font-headline-sm text-body-md text-on-surface font-semibold truncate">Hardware &amp; Verificación Técnica</span>
+</div>
+</div>
+<!-- Step 3: Pending -->
+<div class="flex items-center gap-space-md p-space-sm rounded-lg bg-surface-container-lowest opacity-75 transition-colors">
+<div class="w-9 h-9 rounded-full bg-surface-container-highest text-outline flex items-center justify-center shrink-0 font-headline-sm text-label-md">
+          3
+        </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Paso 03 • Pendiente</span>
+<span class="font-headline-sm text-body-md text-outline font-medium truncate">Custodia &amp; Firma Digital</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Workflow Grid: Left Form (60%), Right Live Act Preview (40%) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT COLUMN: Precision Form Inputs (7 cols on XL) -->
+<div class="xl:col-span-7 flex flex-col gap-space-lg">
+<!-- BLOQUE A: Colaborador Receptor -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex items-center justify-between pb-space-sm mb-space-md bg-surface-container-low px-space-md py-space-xs rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">badge</span>
+<span class="font-headline-sm text-body-lg text-primary font-bold">Bloque A: Datos del Colaborador Receptor</span>
+</div>
+<span class="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-space-sm py-0.5 rounded-full font-bold">Activo RRHH</span>
+</div>
+<div class="flex flex-col gap-space-md">
+<!-- Live Search Bar with Instant Result -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-semibold">Búsqueda rápida por Cédula o Nombre Completo</label>
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">person_search</span>
+<input class="w-full h-10 pl-10 pr-24 bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary shadow-sm" id="employeeSearchInput" placeholder="Ingrese documento de identidad..." type="text" value="Juan David Gutiérrez Zuleta"/>
+<button class="absolute right-1.5 top-1.5 bottom-1.5 px-space-md bg-primary text-on-primary rounded-lg font-label-sm text-label-sm hover:bg-primary-container transition-colors flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[16px]">search</span>
+                Buscar
+              </button>
+</div>
+</div>
+<!-- Profile Snapshot Card -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<img class="w-14 h-14 rounded-full object-cover shadow-sm ring-2 ring-primary-fixed" data-alt="Corporate headshot of Juan David Gutierrez, a professional Latin American operations analyst wearing a neat navy blue collared uniform against a clean architectural studio background with crisp natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGsQE4UpuHooVIQ04f_YXJzXSdny24c9qcuPr1cMP7E4D0fr4H3zy4UOsHO9xZEClCFY1bkk-g_Xpzvn8G3xYhBX7yHYVnzEWjWnGQtd9Eoum0fT7tscs2fRHPj-v0WtIi5uGGU25yihacJ_e5Iv0qXvC7l8NaVI7cnqtD-6vDgu2_3qjKc0QBBw9K8bc3vR_ht51hHYqSMbBUb2y9PlxaMsdkLoFSV8BpGGaugbqPrjso00WxNqWonQ"/>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-primary font-bold" id="cardEmpName">Juan David Gutiérrez Zuleta</span>
+<span class="material-symbols-outlined text-secondary text-[16px]" title="Verificado con SGI Talento Humano">check_circle</span>
+</div>
+<div class="flex items-center gap-space-md flex-wrap text-on-surface-variant font-body-sm text-body-sm mt-0.5">
+<span class="font-code-mono text-code-mono font-semibold text-primary">C.C. 1.020.455.890</span>
+<span>•</span>
+<span class="font-semibold text-on-surface">Analista de Operaciones</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline truncate">juan.gutierrez@casalimpia.com.co</span>
+</div>
+</div>
+<div class="flex flex-col sm:items-end gap-1 shrink-0 bg-surface-container-lowest p-space-sm rounded-lg shadow-sm">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">Ubicación Asignada</span>
+<span class="font-label-md text-label-md text-primary font-bold">Sede Bogotá Principal</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Servicios Generales • Piso 4</span>
+</div>
+</div>
+</div>
+</div>
+<!-- BLOQUE B: Selección del Hardware a Asignar -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex items-center justify-between pb-space-sm mb-space-md bg-surface-container-low px-space-md py-space-xs rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">laptop_chromebook</span>
+<span class="font-headline-sm text-body-lg text-primary font-bold">Bloque B: Selección del Hardware a Asignar</span>
+</div>
+<span class="font-code-mono text-code-mono bg-secondary-fixed text-on-secondary-fixed font-bold px-space-sm py-0.5 rounded-full">Filtro: Disponible (24)</span>
+</div>
+<div class="flex flex-col gap-space-md">
+<!-- Select Dropdown for Device Selection -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-semibold">Seleccionar Equipo del Stock TI Activo</label>
+<div class="relative">
+<select class="w-full h-10 px-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary appearance-none cursor-pointer" id="assetSelect">
+<option selected="" value="CL-TI-1105">HP ProBook 450 G9 • Placa: CL-TI-1105 • Serie: 5CD23489LQ • Estado: Excelente 10/10</option>
+<option value="CL-TI-1108">Lenovo ThinkPad E14 Gen 4 • Placa: CL-TI-1108 • Serie: PF391K20 • Estado: Excelente 10/10</option>
+<option value="CL-TI-0982">Dell Latitude 3420 • Placa: CL-TI-0982 • Serie: 8JK12Y2 • Estado: Muy Bueno 9/10</option>
+</select>
+<span class="material-symbols-outlined absolute right-space-md top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+</div>
+</div>
+<!-- Hardware Detailed Inspection Card -->
+<div class="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-md">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-lg bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[28px]">devices</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="font-headline-sm text-headline-sm text-primary font-bold">HP ProBook 450 G9 Business</span>
+<span class="font-label-sm text-label-sm bg-secondary-fixed text-on-secondary-fixed font-bold px-2 py-0.5 rounded-full">Stock Verificado</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Intel Core i7 12va Gen • 16GB RAM DDR4 • SSD 512GB NVMe</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm font-code-mono text-code-mono">
+<div class="bg-surface-container-lowest px-space-md py-1 rounded-lg shadow-sm text-center">
+<span class="font-label-sm text-label-sm text-outline block">PLACA TI</span>
+<span class="font-bold text-primary">CL-TI-1105</span>
+</div>
+<div class="bg-surface-container-lowest px-space-md py-1 rounded-lg shadow-sm text-center">
+<span class="font-label-sm text-label-sm text-outline block">SERIAL</span>
+<span class="font-bold text-on-surface">5CD23489LQ</span>
+</div>
+</div>
+</div>
+<!-- Technical QA Checklist -->
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold block mb-space-sm">Verificación Técnica en Mesa de Salida</span>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm">
+<label class="flex items-center gap-space-sm p-space-xs rounded hover:bg-surface-container cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">Cargador HP 65W Original</span>
+</label>
+<label class="flex items-center gap-space-sm p-space-xs rounded hover:bg-surface-container cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">Salud de Batería &gt; 95%</span>
+</label>
+<label class="flex items-center gap-space-sm p-space-xs rounded hover:bg-surface-container cursor-pointer">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary accent-primary" type="checkbox"/>
+<span class="font-body-sm text-body-sm text-on-surface">Prueba de Encendido OK</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- BLOQUE C: Accesorios y Periféricos Entregados -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex items-center justify-between pb-space-sm mb-space-md bg-surface-container-low px-space-md py-space-xs rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
+<span class="font-headline-sm text-body-lg text-primary font-bold">Bloque C: Accesorios y Periféricos Entregados</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Marque los elementos físicos transferidos</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-sm">
+<label class="flex items-start gap-space-sm p-space-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 mt-0.5 rounded text-primary accent-primary" id="acc1" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Maletín Corporativo</span>
+<span class="font-body-sm text-body-sm text-outline">Impermeable logo Casalimpia</span>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 mt-0.5 rounded text-primary accent-primary" id="acc2" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Mouse Inalámbrico Logitech</span>
+<span class="font-body-sm text-body-sm text-outline">M185 con batería AA y Dongle</span>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 mt-0.5 rounded text-primary accent-primary" id="acc3" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Adaptador Corriente 65W</span>
+<span class="font-body-sm text-body-sm text-outline">Cable trifásico original HP</span>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 mt-0.5 rounded text-primary accent-primary" id="acc4" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Guaya Kensington</span>
+<span class="font-body-sm text-body-sm text-outline">Candado de seguridad con 2 llaves</span>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<input checked="" class="w-4 h-4 mt-0.5 rounded text-primary accent-primary" id="acc5" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Diadema Jabra Evolve 20</span>
+<span class="font-body-sm text-body-sm text-outline">Conexión USB para Microsoft Teams</span>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container transition-colors opacity-70">
+<input class="w-4 h-4 mt-0.5 rounded text-primary accent-primary" id="acc6" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Hub Multipuesto USB-C</span>
+<span class="font-body-sm text-body-sm text-outline">HDMI + 3 puertos USB 3.0</span>
+</div>
+</label>
+</div>
+</div>
+<!-- BLOQUE D: Términos de Responsabilidad y Observaciones -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="flex items-center justify-between pb-space-sm mb-space-md bg-surface-container-low px-space-md py-space-xs rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">gavel</span>
+<span class="font-headline-sm text-body-lg text-primary font-bold">Bloque D: Términos Legales y Observaciones Técnicas</span>
+</div>
+<span class="font-label-sm text-label-sm font-code-mono text-outline">POL-TI-CASALIMPIA-2026</span>
+</div>
+<div class="flex flex-col gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-on-surface font-semibold">Observaciones de Configuración y Software Precargado</label>
+<textarea class="w-full p-space-sm bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary shadow-sm" placeholder="Detalle particularidades del activo o requerimientos..." rows="3">Equipo configurado con perfil institucional Casalimpia S.A., licencia Windows 11 Pro empresarial activa, cliente VPN FortiClient configurado para operaciones y suite SIC ERP con credenciales de analista validadas.</textarea>
+</div>
+<div class="p-space-md bg-surface-container-low rounded-lg flex gap-space-md items-start">
+<span class="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">policy</span>
+<div class="flex flex-col gap-1">
+<span class="font-label-md text-label-md text-primary font-bold">Cláusula de Custodia y Responsabilidad Legal</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                El colaborador receptor asume la custodia, conservación y buen uso del equipo de cómputo y periféricos descritos, reconociendo que son herramientas exclusivas para el desempeño de sus labores en <strong class="text-on-surface">CASALIMPIA S.A.</strong> Cualquier daño imputable a dolo o negligencia grave será procesado conforme al Reglamento Interno de Trabajo y la legislación colombiana vigente.
+              </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Real-Time Official Document Act Preview (5 cols on XL) -->
+<div class="xl:col-span-5 flex flex-col gap-space-md sticky top-20">
+<!-- Top Actions Bar -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-on-surface font-bold uppercase tracking-wider">Acta en Vista Previa</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="p-space-xs text-on-surface-variant hover:text-primary rounded hover:bg-surface-container transition-colors" title="Ampliar documento" type="button">
+<span class="material-symbols-outlined text-[20px]">fullscreen</span>
+</button>
+<button class="p-space-xs text-on-surface-variant hover:text-primary rounded hover:bg-surface-container transition-colors" title="Imprimir borrador" type="button">
+<span class="material-symbols-outlined text-[20px]">print</span>
+</button>
+</div>
+</div>
+<!-- Legal Act Document Simulation Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-lg flex flex-col gap-space-md text-on-surface relative overflow-hidden">
+<!-- Subtle Institutional Watermark -->
+<div class="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.03] select-none">
+<span class="font-display-lg text-[120px] font-black tracking-widest text-primary rotate-[-25deg]">CASALIMPIA</span>
+</div>
+<!-- Official Act Header -->
+<div class="flex items-start justify-between pb-space-md bg-surface-container-low p-space-md rounded-lg">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-on-primary font-headline-sm font-black">
+              CL
+            </div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-label-md text-primary font-bold leading-tight">CASALIMPIA S.A.</span>
+<span class="font-label-sm text-label-sm text-outline">NIT: 860.038.324-1</span>
+<span class="font-label-sm text-[10px] text-secondary font-semibold uppercase">Gestión TI • ISO 27001</span>
+</div>
+</div>
+<div class="flex flex-col items-end text-right">
+<span class="font-code-mono text-label-md font-bold text-primary">TI-FO-04</span>
+<span class="font-code-mono text-label-sm text-outline">Acta N°: ACT-2026-0382</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">18 de Abril de 2026</span>
+</div>
+</div>
+<!-- Title of Document -->
+<div class="text-center py-space-xs">
+<h2 class="font-headline-sm text-headline-sm text-primary font-bold uppercase tracking-tight">Acta de Entrega de Equipos Tecnológicos</h2>
+<span class="font-body-sm text-label-sm text-outline">Custodia de Bienes Informáticos y Periféricos</span>
+</div>
+<!-- Document Section 1: Receptor Data -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">1. Datos del Asignatario</span>
+<span class="font-code-mono text-label-sm text-secondary font-semibold">C.C. 1.020.455.890</span>
+</div>
+<span class="font-headline-sm text-body-md text-on-surface font-bold">Juan David Gutiérrez Zuleta</span>
+<div class="grid grid-cols-2 gap-x-space-md text-body-sm text-on-surface-variant">
+<span>Cargo: <strong class="text-on-surface">Analista Operaciones</strong></span>
+<span>Área: <strong class="text-on-surface">Servicios Generales</strong></span>
+<span>Sede: <strong class="text-on-surface">Bogotá Principal</strong></span>
+<span>Correo: <span class="font-code-mono text-[11px] truncate">juan.gutierrez@...</span></span>
+</div>
+</div>
+<!-- Document Section 2: Hardware Details -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">2. Especificación del Activo Principal</span>
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-body-md text-primary font-bold">HP ProBook 450 G9</span>
+<span class="font-code-mono text-code-mono bg-surface-container-highest px-space-xs py-0.5 rounded text-primary font-bold">PLACA: CL-TI-1105</span>
+</div>
+<div class="font-code-mono text-code-mono text-on-surface-variant flex items-center justify-between">
+<span>SERIE: 5CD23489LQ</span>
+<span class="text-secondary font-semibold">ESTADO: 10/10 EXCELENTE</span>
+</div>
+</div>
+<!-- Document Section 3: Accessories Checklist Snapshot -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col gap-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">3. Periféricos y Accesorios Relacionados</span>
+<ul class="grid grid-cols-1 sm:grid-cols-2 gap-1 font-body-sm text-body-sm text-on-surface">
+<li class="flex items-center gap-1"><span class="text-secondary">•</span> Maletín impermeable</li>
+<li class="flex items-center gap-1"><span class="text-secondary">•</span> Mouse Logitech M185</li>
+<li class="flex items-center gap-1"><span class="text-secondary">•</span> Cargador original 65W</li>
+<li class="flex items-center gap-1"><span class="text-secondary">•</span> Guaya de seguridad</li>
+<li class="flex items-center gap-1"><span class="text-secondary">•</span> Diadema Jabra Evolve 20</li>
+</ul>
+</div>
+<!-- Document Section 4: Dual Digital Signatures Zone -->
+<div class="flex flex-col gap-space-sm mt-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">4. Conformidad y Firmas de Legalización</span>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<!-- Signature Deliverer (IT Admin) -->
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col items-center justify-between text-center min-h-[140px]">
+<span class="font-label-sm text-label-sm text-outline uppercase font-semibold">Entrega por TI</span>
+<!-- Simulated Digital Stamp & Key Signature -->
+<div class="flex flex-col items-center py-space-xs">
+<span class="font-headline-sm text-headline-sm text-primary font-bold italic font-serif">Alexis Cruz R.</span>
+<span class="font-code-mono text-[10px] text-secondary font-bold">CERT-HASH: 78a9c2...44f0</span>
+<span class="font-label-sm text-[10px] text-outline">18-ABR-2026 09:42 COT</span>
+</div>
+<div class="w-full pt-1 bg-surface-container-high rounded text-center">
+<span class="font-label-sm text-label-sm text-primary font-bold block truncate">Ing. Alexis Cruz</span>
+<span class="font-body-sm text-[11px] text-outline block truncate">Administrador TI Casalimpia</span>
+</div>
+</div>
+<!-- Signature Receiver (Digital Canvas / Biometric) -->
+<div class="bg-surface-container p-space-sm rounded-lg flex flex-col items-center justify-between text-center min-h-[140px]">
+<div class="w-full flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-primary uppercase font-bold">Firma Receptor</span>
+<button class="font-label-sm text-[11px] text-error hover:underline flex items-center gap-0.5" id="clearCanvasBtn" type="button">
+<span class="material-symbols-outlined text-[14px]">ink_eraser</span>
+                  Limpiar
+                </button>
+</div>
+<!-- Interactive Signature Canvas Area -->
+<div class="relative w-full h-16 bg-surface-container-lowest rounded flex items-center justify-center overflow-hidden cursor-crosshair shadow-inner my-1">
+<canvas class="w-full h-full block" id="signaturePad"></canvas>
+<div class="absolute pointer-events-none flex flex-col items-center text-outline" id="sigPlaceholder">
+<span class="material-symbols-outlined text-[18px]">draw</span>
+<span class="font-label-sm text-[10px]">Dibuje trazo o firme digitalmente</span>
+</div>
+</div>
+<div class="w-full pt-1 bg-surface-container-high rounded text-center">
+<span class="font-label-sm text-label-sm text-on-surface font-bold block truncate">Juan David Gutiérrez Zuleta</span>
+<span class="font-body-sm text-[11px] text-outline block truncate">C.C. 1.020.455.890</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Legal Disclaimer Footer in Act -->
+<div class="pt-space-xs text-center text-outline font-body-sm text-[11px] leading-tight">
+          Documento electrónico con plena validez jurídica según la Ley 527 de 1999 de Colombia. Generado por el Sistema de Gestión de Inventario SGI CASALIMPIA.
+        </div>
+</div>
+<!-- Action Buttons Panel -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-sm">
+<button class="w-full h-11 bg-secondary text-on-secondary rounded-lg font-headline-sm text-body-md font-bold flex items-center justify-center gap-space-sm hover:opacity-95 transition-opacity shadow-md" id="btnConfirmDelivery" type="button">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+          Confirmar y Guardar Entrega
+        </button>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+<button class="h-9 px-space-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-space-xs hover:bg-primary-container transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+            Descargar PDF Firmado
+          </button>
+<button class="h-9 px-space-sm bg-surface-container-high text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-space-xs hover:bg-surface-container-highest transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+            Enviar Copia al Correo
+          </button>
+</div>
+<button class="h-8 text-outline hover:text-error rounded font-label-sm text-label-sm transition-colors text-center" type="button">
+          Cancelar y Descartar Registro
+        </button>
+</div>
+<!-- Compliance Audit Tag -->
+<div class="p-space-sm bg-surface-container-low rounded-lg flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">verified</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-primary font-bold">Trazabilidad ISO 27001 • Casalimpia S.A.</span>
+<span class="font-body-sm text-[11px] text-outline truncate">El registro bloqueará el activo de posteriores reasignaciones en tiempo real.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Interactive Signature Canvas Logic
+  (function initSignatureCanvas() {
+    const canvas = document.getElementById('signaturePad');
+    const placeholder = document.getElementById('sigPlaceholder');
+    const clearBtn = document.getElementById('clearCanvasBtn');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#00355f';
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function startDraw(e) {
+      isDrawing = true;
+      if (placeholder) placeholder.style.display = 'none';
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      e.preventDefault();
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      e.preventDefault();
+    }
+
+    function stopDraw() {
+      isDrawing = false;
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    window.addEventListener('touchend', stopDraw);
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (placeholder) placeholder.style.display = 'flex';
+      });
+    }
+
+    const confirmBtn = document.getElementById('btnConfirmDelivery');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => {
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = `
+          <span class="material-symbols-outlined animate-spin text-[20px]">sync</span>
+          Generando Hash Legal y Asignando...
+        `;
+        confirmBtn.disabled = true;
+        setTimeout(() => {
+          confirmBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[20px]">task_alt</span>
+            ¡Entrega Legalizada Exitosamente!
+          `;
+          confirmBtn.classList.remove('bg-secondary');
+          confirmBtn.classList.add('bg-primary');
+        }, 1200);
+      });
+    }
+  })();
+</script></main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_4px_rgba(0,0,0,0.02)] py-space-md px-gutter-lg"><div class="w-full flex flex-col sm:flex-row items-center justify-between gap-space-xs text-outline"><span class="font-body-sm text-body-sm">CASALIMPIA S.A - Tecnológico de Antioquia PPI 2026</span><div class="flex items-center gap-space-md font-code-mono text-code-mono text-outline-variant"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-secondary"></span>Sistema Operativo</span><span>v2.4.0</span></div></div></footer></div></body></html>

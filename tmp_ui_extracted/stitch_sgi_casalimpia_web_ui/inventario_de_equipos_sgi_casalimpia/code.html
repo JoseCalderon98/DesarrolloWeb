@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "error-container": "#ffdad6", "on-secondary-container": "#00714e", "primary": "#00355f", "on-primary-fixed": "#001c37", "primary-fixed": "#d2e4ff", "primary-fixed-dim": "#a0c9ff", "inverse-on-surface": "#eef0ff", "on-tertiary-fixed": "#001d31", "on-primary": "#ffffff", "secondary-container": "#82f5c1", "secondary-fixed-dim": "#68dba9", "on-tertiary-container": "#74c1ff", "on-surface": "#131b2e", "on-background": "#131b2e", "on-error-container": "#93000a", "surface": "#faf8ff", "secondary-fixed": "#85f8c4", "outline-variant": "#c2c7d1", "tertiary-fixed": "#cce5ff", "on-tertiary": "#ffffff", "tertiary": "#003756", "background": "#faf8ff", "on-secondary": "#ffffff", "inverse-surface": "#283044", "surface-tint": "#2d6197", "tertiary-fixed-dim": "#93ccff", "surface-dim": "#d2d9f4", "on-secondary-fixed": "#002114", "tertiary-container": "#004e78", "surface-container-lowest": "#ffffff", "on-tertiary-fixed-variant": "#004b73", "surface-bright": "#faf8ff", "surface-container-low": "#f2f3ff", "on-secondary-fixed-variant": "#005137", "surface-container": "#eaedff", "error": "#ba1a1a", "outline": "#727780", "on-primary-fixed-variant": "#07497d", "on-primary-container": "#8ebdf9", "inverse-primary": "#a0c9ff", "surface-container-high": "#e2e7ff", "surface-variant": "#dae2fd", "on-error": "#ffffff", "on-surface-variant": "#42474f", "surface-container-highest": "#dae2fd", "secondary": "#006c4a", "primary-container": "#0f4c81" }, borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, spacing: { "space-md": "0.75rem", "margin-lg": "2rem", "space-xs": "0.25rem", "gutter-lg": "1.5rem", "space-xl": "1.5rem", "margin": "1rem", "gutter": "1rem", "space-lg": "1rem", "space-sm": "0.5rem" }, fontFamily: { "body-sm": ["Inter"], "body-lg": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "code-mono": ["JetBrains Mono"], "label-sm": ["Inter"], "label-md": ["Inter"], "headline-lg": ["Plus Jakarta Sans"], "body-md": ["Inter"] }, fontSize: { "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "26px", "fontWeight": "600" }], "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "code-mono": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.03em", "fontWeight": "600" }], "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }] } } } };</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col flex-1 overflow-y-auto"><div class="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low"><img alt="Logo SGI CASALIMPIA" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VeTp2XUhWy_4lVUnS_eq24zKPiqAOa8MAt-2aMEz385VkTAcAuDMWkXIYMCipxF3WwQnED5QcovIMWJpZQOxp2WLOHGMUv3FOI6OUkGrGmYDxOoYfXFkHZrYphhgGp8jRZsAZ5a3VMJ7vybCppSvuB3o3WYIazXIIK6lOJutHKbrhX7QfEo-ZBRoIZ6GGX0adrV4meB9nogMZfeePRqWaOdiPFX8LAuibs1jjaUrSDLYH9YTVguEcZwTsn"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-primary leading-none">SGI CASALIMPIA</span><span class="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span></div></div><div class="px-space-xl py-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Menú Principal</span></div><nav class="px-space-md space-y-space-xs flex-1" data-active-classes="bg-primary-container text-on-primary font-headline-sm rounded-lg"><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="dashboard" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-body-md text-body-md">Dashboard</span></a><a aria-current="page" class="flex items-center justify-between px-space-md py-space-sm transition-colors bg-primary-container text-on-primary font-headline-sm rounded-lg" data-path="inventario-de-activos" href="#"><div class="flex items-center gap-space-md"><span class="material-symbols-outlined text-[20px]">devices</span><span class="font-body-md text-body-md">Inventario de Activos</span></div><span class="font-code-mono text-code-mono bg-surface-container-highest text-primary font-semibold px-space-sm py-0.5 rounded-full">1,428</span></a><div class="pt-space-xs"><div class="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant rounded-lg"><div class="flex items-center gap-space-md"><span class="material-symbols-outlined text-[20px]">assignment_return</span><span class="font-body-md text-body-md font-semibold text-on-surface">Entrega y Recepción</span></div><span class="material-symbols-outlined text-[16px] text-outline">expand_more</span></div><div class="ml-space-lg pl-space-md space-y-space-xs mt-space-xs"><a class="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="nueva-entrega-acta" href="#"><span class="material-symbols-outlined text-[16px]">post_add</span><span class="font-body-sm text-body-sm">Nueva Entrega / Acta</span></a><a class="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="devoluciones" href="#"><span class="material-symbols-outlined text-[16px]">keyboard_return</span><span class="font-body-sm text-body-sm">Devoluciones</span></a><a class="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="historial-entregas" href="#"><span class="material-symbols-outlined text-[16px]">history</span><span class="font-body-sm text-body-sm">Historial</span></a></div></div><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="novedades-y-mantenimiento" href="#"><span class="material-symbols-outlined text-[20px]">build_circle</span><span class="font-body-md text-body-md">Novedades y Mantenimiento</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="gestion-de-usuarios-y-roles" href="#"><span class="material-symbols-outlined text-[20px]">admin_panel_settings</span><span class="font-body-md text-body-md">Gestión de Usuarios y Roles</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors" data-path="reportes-y-auditoria" href="#"><span class="material-symbols-outlined text-[20px]">verified_user</span><span class="font-body-md text-body-md">Reportes y Auditoría</span></a></nav></div><div class="p-space-lg m-space-md bg-surface-container rounded-xl flex items-center gap-space-md"><div class="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[18px]">verified</span></div><div class="flex flex-col overflow-hidden"><span class="font-label-sm text-label-sm text-primary uppercase font-bold truncate">SGI Conectado</span><span class="font-body-sm text-body-sm text-outline truncate">Auditoría Legal ISO</span></div></div></aside><div class="pl-72 flex flex-col min-h-screen"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-space-xl flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-lg flex-1 max-w-2xl"><div class="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0"><span class="material-symbols-outlined text-[16px] text-secondary">location_on</span><span class="font-label-sm text-label-sm font-semibold truncate">Sede Principal Av. El Dorado #100-80, Bogotá</span></div><div class="relative w-full max-w-md"><span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span><input class="w-full h-9 pl-9 pr-space-md bg-surface-container-lowest text-on-surface rounded-lg font-body-sm text-body-sm placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]" placeholder="Buscar activo por serie, placa o modelo..." type="text"/></div></div><div class="flex items-center gap-space-md shrink-0"><button aria-label="Notificaciones" class="relative h-9 w-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span></button><div class="h-6 w-px bg-surface-container-highest"></div><div class="flex items-center gap-space-md pl-space-xs"><div class="flex flex-col text-right hidden sm:flex"><span class="font-label-md text-label-md text-on-surface">Ing. Alexis Cruz</span><span class="font-label-sm text-label-sm text-secondary font-semibold">Administrador TI</span></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q"/></div></div></header><main class="relative pt-16 flex-1 w-full px-gutter-lg pb-space-xl bg-background"><div class="flex flex-col w-full">
+<!-- Top Command & Breadcrumb Context -->
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-lg mb-space-xl">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-outline font-label-sm uppercase tracking-wider">
+<span>Gestión de Infraestructura</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-bold">Módulo Activos TI</span>
+<span class="bg-surface-container-high text-primary px-space-xs rounded font-code-mono text-[10px]">CU-08</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-on-surface tracking-tight">Inventario General de Activos TI</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+        Consolidado oficial de hardware corporativo, estado técnico, trazabilidad de seriales e historial de custodias de CASALIMPIA S.A. Conforme a especificaciones de control interno y auditoría ISO/IEC 20000.
+      </p>
+</div>
+<!-- Quick Actions (RF-02, RF-08) -->
+<div class="flex flex-wrap items-center gap-space-sm shrink-0">
+<button class="flex items-center gap-space-xs px-space-md h-9 bg-surface-container-lowest text-on-surface rounded-lg font-label-md text-label-md shadow-sm hover:bg-surface-container-high transition-colors" id="btn-import-lot" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">upload_file</span>
+<span>Importar Lote (CSV/XLSX)</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md h-9 bg-surface-container-lowest text-on-surface rounded-lg font-label-md text-label-md shadow-sm hover:bg-surface-container-high transition-colors" id="btn-export-rep" type="button">
+<span class="material-symbols-outlined text-[18px] text-secondary">table_chart</span>
+<span>Exportar Reporte (RF-08)</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-lg h-9 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-sm hover:bg-primary-container transition-all" id="btn-register-asset" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>+ Registrar Nuevo Equipo (RF-02)</span>
+</button>
+</div>
+</div>
+<!-- Hero Visual Accent & KPI Cards Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
+<!-- KPI 1: Total Equipos -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute right-0 top-0 translate-x-3 -translate-y-3 w-24 h-24 bg-primary/5 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Total Equipos Sistema</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+</div>
+</div>
+<div class="flex items-baseline gap-space-sm mb-space-xs">
+<span class="font-display-lg text-display-lg text-on-surface font-bold">1,485</span>
+<span class="font-label-sm text-label-sm text-outline font-code-mono">Uds.</span>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-primary font-semibold">
+<span class="material-symbols-outlined text-[14px]">pie_chart</span>
+<span>82% Tasa Operativa</span>
+</div>
+<div class="w-16 bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 82%;"></div>
+</div>
+</div>
+</div>
+<!-- KPI 2: Disponibles Stock -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute right-0 top-0 translate-x-3 -translate-y-3 w-24 h-24 bg-secondary-container/20 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Stock Bodega TI</span>
+<div class="w-8 h-8 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+</div>
+</div>
+<div class="flex items-baseline gap-space-sm mb-space-xs">
+<span class="font-display-lg text-display-lg text-secondary font-bold">342</span>
+<span class="font-label-sm text-label-sm text-outline font-code-mono">Disp.</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-secondary font-semibold pt-space-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>Listos para entrega inmediata</span>
+</div>
+</div>
+<!-- KPI 3: Asignados Activos -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute right-0 top-0 translate-x-3 -translate-y-3 w-24 h-24 bg-primary-fixed-dim/20 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Asignados a Personal</span>
+<div class="w-8 h-8 rounded-lg bg-primary-fixed/50 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">assignment_ind</span>
+</div>
+</div>
+<div class="flex items-baseline gap-space-sm mb-space-xs">
+<span class="font-display-lg text-display-lg text-on-surface font-bold">1,089</span>
+<span class="font-label-sm text-label-sm text-outline font-code-mono">En uso</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-outline font-semibold pt-space-xs">
+<span class="material-symbols-outlined text-[14px] text-primary">verified</span>
+<span>100% Actas Digitales Firmadas</span>
+</div>
+</div>
+<!-- KPI 4: Mantenimiento / Novedad -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute right-0 top-0 translate-x-3 -translate-y-3 w-24 h-24 bg-error-container/40 rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">En Taller / Novedad</span>
+<div class="w-8 h-8 rounded-lg bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[18px]">build</span>
+</div>
+</div>
+<div class="flex items-baseline gap-space-sm mb-space-xs">
+<span class="font-display-lg text-display-lg text-error font-bold">54</span>
+<span class="font-label-sm text-label-sm text-error font-code-mono">Casos</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-error font-semibold pt-space-xs">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+<span>3 Reparaciones Urgentes (SLA &lt; 24h)</span>
+</div>
+</div>
+</div>
+<!-- Advanced Filtering Toolbar -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm mb-space-lg flex flex-col gap-space-md">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-md items-center">
+<!-- Universal Search Field with Visual Indicator -->
+<div class="md:col-span-4 relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold" for="search-input">Buscador Universal</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full h-9 pl-9 pr-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" id="search-input" placeholder="Buscar por Placa, Serial, Marca, Modelo o Asignatario..." type="text"/>
+</div>
+</div>
+<!-- Category Filter -->
+<div class="md:col-span-2">
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold" for="filter-category">Categoría</label>
+<div class="relative">
+<select class="w-full h-9 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8" id="filter-category">
+<option value="all">Todas las Categorías</option>
+<option value="laptops">Portátiles Corporativos</option>
+<option value="desktops">Estaciones de Escritorio</option>
+<option value="monitors">Monitores y Displays</option>
+<option value="servers">Servidores y Racks</option>
+<option value="telephony">Telefonía IP / Cisco</option>
+<option value="peripherals">Periféricos y Docks</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- State Filter -->
+<div class="md:col-span-2">
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold" for="filter-status">Estado Operativo</label>
+<div class="relative">
+<select class="w-full h-9 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8" id="filter-status">
+<option value="all">Todos los Estados</option>
+<option value="disponible">🟢 Disponible (Stock)</option>
+<option value="asignado">🔵 Asignado (Acta Vigente)</option>
+<option value="mantenimiento">🟡 En Mantenimiento</option>
+<option value="revision">🟠 En Revisión Técnica</option>
+<option value="baja">🔴 Dado de Baja</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Location / Branch Filter -->
+<div class="md:col-span-2">
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold" for="filter-location">Sede / Ubicación</label>
+<div class="relative">
+<select class="w-full h-9 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8" id="filter-location">
+<option value="all">Todas las Sedes</option>
+<option value="bogota">Bogotá - Av. El Dorado</option>
+<option value="medellin">Medellín - Poblado</option>
+<option value="cali">Cali - Valle del Lili</option>
+<option value="barranquilla">Barranquilla - Prado</option>
+<option value="bucaramanga">Bucaramanga - Cabecera</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Action Clear & Quick Toggles -->
+<div class="md:col-span-2 flex items-end justify-end gap-space-xs pt-5">
+<button class="h-9 px-space-md bg-surface-container text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg font-label-sm text-label-sm flex items-center gap-space-xs transition-colors shadow-sm" id="btn-reset-filters" title="Restablecer filtros" type="button">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+<span>Limpiar</span>
+</button>
+<button class="h-9 px-space-md bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim rounded-lg font-label-sm text-label-sm flex items-center gap-space-xs transition-colors shadow-sm font-semibold" id="toggle-critical-filters" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+<span>Filtros Críticos</span>
+</button>
+</div>
+</div>
+<!-- Active Filters & Registry Counter -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs border-t-0">
+<div class="flex items-center gap-space-xs flex-wrap text-outline font-label-sm text-label-sm">
+<span class="font-bold text-on-surface">Filtros Activos:</span>
+<span class="inline-flex items-center gap-1 bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full font-code-mono text-[11px]">
+          Sede: Todas
+          <span class="material-symbols-outlined text-[12px] cursor-pointer hover:text-error">close</span>
+</span>
+<span class="inline-flex items-center gap-1 bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full font-code-mono text-[11px]">
+          Estado: Activos Operacionales
+          <span class="material-symbols-outlined text-[12px] cursor-pointer hover:text-error">close</span>
+</span>
+</div>
+<div class="flex items-center gap-space-md">
+<span class="font-code-mono text-code-mono text-outline">
+          Mostrando <span class="font-bold text-primary" id="current-visible-count">8</span> de <span class="font-bold text-on-surface">1,485</span> registros indexados
+        </span>
+</div>
+</div>
+</div>
+<!-- Critical Filter Pill Drawer / Sub-bar (collapsible state visual) -->
+<div class="mb-space-lg p-space-md bg-surface-container rounded-xl flex flex-wrap items-center justify-between gap-space-md shadow-sm" id="critical-drawer">
+<div class="flex items-center gap-space-md flex-wrap">
+<span class="flex items-center gap-1 text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px]">emergency</span> Segmentos Prioritarios:
+      </span>
+<button class="px-space-md py-1 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm hover:bg-error-container hover:text-on-error-container transition-colors shadow-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> Con Novedades Pendientes (14)
+      </button>
+<button class="px-space-md py-1 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm hover:bg-secondary-container hover:text-on-secondary-container transition-colors shadow-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Laptops Disponibles Inmediatas (48)
+      </button>
+<button class="px-space-md py-1 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm hover:bg-surface-container-highest transition-colors shadow-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span> Garantía por Vencer &lt; 30d (21)
+      </button>
+</div>
+<span class="font-label-sm text-label-sm text-outline italic">Actualizado hace 4 min por Agente SGI</span>
+</div>
+<!-- Main Assets Data Table Section -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg">
+<!-- Table Interactive Frame -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse" id="assets-table">
+<thead>
+<tr class="bg-surface-container-low text-outline font-label-sm text-label-sm uppercase tracking-wider select-none">
+<th class="py-space-md px-space-md w-10 text-center">
+<input class="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer accent-primary" id="select-all-assets" title="Seleccionar todos" type="checkbox"/>
+</th>
+<th class="py-space-md px-space-md font-bold">Placa / Código</th>
+<th class="py-space-md px-space-lg font-bold">Equipo y Especificaciones</th>
+<th class="py-space-md px-space-md font-bold">Número Serial</th>
+<th class="py-space-md px-space-md font-bold">Categoría</th>
+<th class="py-space-md px-space-md font-bold">Estado</th>
+<th class="py-space-md px-space-lg font-bold">Asignatario / Ubicación</th>
+<th class="py-space-md px-space-md font-bold">Último Movimiento</th>
+<th class="py-space-md px-space-md text-right font-bold pr-space-lg">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 font-body-sm text-body-sm text-on-surface">
+<!-- Row 1: Laptop Asignada -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded">CL-TI-0892</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">laptop_mac</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">Dell Latitude 5430 Rugged</span>
+<span class="font-body-sm text-body-sm text-outline truncate">Core i7 12th Gen • 16GB RAM DDR4 • 512GB NVMe SSD</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">8F9K2Q3</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Laptops Corporativas</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                ASIGNADO
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Santiago Jiménez Castro</span>
+<span class="font-body-sm text-body-sm text-outline">Operaciones TI • Sede Bogotá El Dorado</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">12 Mar 2026</span>
+<span class="font-label-sm text-label-sm text-outline">Acta #ACT-2026-881</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-primary transition-colors" title="Ver Ficha Técnica Completa">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-error transition-colors" title="Registrar Novedad / Incidencia">
+<span class="material-symbols-outlined text-[18px]">report_problem</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Editar Parámetros">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Laptop Disponible en Stock -->
+<tr class="hover:bg-surface-container transition-colors group bg-surface/40">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded">CL-TI-1044</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[20px]">laptop</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">Lenovo ThinkPad T14s Gen 3</span>
+<span class="font-body-sm text-body-sm text-outline truncate">Ryzen 7 PRO • 32GB RAM • 1TB SSD NVMe • Iris Xe</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">PF-382LX9</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Laptops Corporativas</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                DISPONIBLE
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-1.5 text-secondary font-semibold">
+<span class="material-symbols-outlined text-[16px]">warehouse</span>
+<span class="font-label-md text-label-md">En Bodega TI Principal (Rack B4)</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">28 Feb 2026</span>
+<span class="font-label-sm text-label-sm text-outline">Ingreso por Compra Lote</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="px-2 py-1 rounded bg-secondary text-on-secondary text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm" title="Entregar de Inmediato / Generar Acta">
+<span class="material-symbols-outlined text-[14px]">send</span> Entregar
+                </button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-primary transition-colors" title="Ver Ficha Técnica">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: PC Escritorio en Mantenimiento -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded">CL-TI-0419</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">desktop_windows</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">HP EliteDesk 800 G6 SFF</span>
+<span class="font-body-sm text-body-sm text-outline truncate">Core i5 10th Gen • 16GB RAM • 256GB SSD + 1TB HDD</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">MXL-2049182</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Estaciones de Trabajo</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-surface-tint"></span>
+                MANTENIMIENTO
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Taller TI Soporte Nivel 2</span>
+<span class="font-body-sm text-body-sm text-error font-medium">Fallo Fuente Poder (Ticket #4092)</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">10 Mar 2026</span>
+<span class="font-label-sm text-label-sm text-outline">Ingreso a Laboratorio</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-primary transition-colors" title="Bitácora de Reparación">
+<span class="material-symbols-outlined text-[18px]">build_circle</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Ver Ficha Técnica">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Monitor Corporativo Asignado -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded">CL-TI-2100</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">monitor</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">Dell UltraSharp 27" 4K U2723QE</span>
+<span class="font-body-sm text-body-sm text-outline truncate">Panel IPS Black • Hub USB-C 90W PD • RJ45 Integrado</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">CN-093K1-7281</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Monitores y Displays</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                ASIGNADO
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Carolina Gómez Peláez</span>
+<span class="font-body-sm text-body-sm text-outline">Gerencia Financiera • Medellín Poblado</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">15 Ene 2026</span>
+<span class="font-label-sm text-label-sm text-outline">Acta #ACT-2026-104</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-primary transition-colors" title="Ver Ficha Técnica">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-error transition-colors" title="Registrar Novedad">
+<span class="material-symbols-outlined text-[18px]">report_problem</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: Servidor Crítico -->
+<tr class="hover:bg-surface-container transition-colors group bg-surface-container-low/30">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded">CL-TI-0012</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-tertiary-container flex items-center justify-center text-on-tertiary-container shrink-0">
+<span class="material-symbols-outlined text-[20px]">dns</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">HPE ProLiant DL380 Gen10</span>
+<span class="font-body-sm text-body-sm text-outline truncate">2x Xeon Gold 6248R • 128GB RAM ECC • 8x 1.2TB SAS RAID10</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">CZ20194A2L</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Servidores e Infraestructura</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                EN PRODUCCIÓN
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">DataCenter Principal (Rack R01-U18)</span>
+<span class="font-body-sm text-body-sm text-outline">Sede Bogotá El Dorado • Servidor BD Nómina</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">02 Feb 2026</span>
+<span class="font-label-sm text-label-sm text-outline">Auditoría Firmware Anual</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-primary transition-colors" title="Telemetría iLO / Ficha">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Ver Ficha Técnica">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 6: Teléfono IP Asignado -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded">CL-TI-3091</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">phone_in_talk</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">Cisco IP Phone 8845</span>
+<span class="font-body-sm text-body-sm text-outline truncate">Cámara 720p HD • Pantalla 5" Color • PoE Gigabit</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">FCH2140A83J</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Telefonía IP / Cisco</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                ASIGNADO
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Recepción y Call Center Central</span>
+<span class="font-body-sm text-body-sm text-outline">Extensión #4401 • Ext. Sede Cali</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">19 Dic 2025</span>
+<span class="font-label-sm text-label-sm text-outline">Acta #ACT-2025-992</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-primary transition-colors" title="Ver Ficha Técnica">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 7: Portátil con Novedad Crítica -->
+<tr class="hover:bg-surface-container transition-colors group bg-error-container/10">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-error bg-error-container px-space-xs py-0.5 rounded">CL-TI-0955</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-error-container flex items-center justify-center text-error shrink-0">
+<span class="material-symbols-outlined text-[20px]">laptop_mac</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">Dell Latitude 3420</span>
+<span class="font-body-sm text-body-sm text-outline truncate">Core i5 11th Gen • 8GB RAM • 256GB SSD</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">J2KL8M1</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Laptops Corporativas</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                CON NOVEDAD
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-error font-semibold">Pantalla Rota / Golpe Físico</span>
+<span class="font-body-sm text-body-sm text-outline">Custodio: Andrés F. Moreno (Operaciones Barranquilla)</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">14 Mar 2026</span>
+<span class="font-label-sm text-label-sm text-error font-semibold">Reporte #NOV-2026-44</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="p-1.5 rounded-md bg-error text-on-error hover:bg-error/90 transition-colors shadow-sm" title="Gestionar Novedad y Seguro">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Ver Ficha Técnica">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 8: Docking Station Disponible -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="py-space-md px-space-md text-center">
+<input class="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary" type="checkbox"/>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="font-code-mono text-code-mono font-bold text-primary bg-surface-container px-space-xs py-0.5 rounded">CL-TI-4410</span>
+</div>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[20px]">dock</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">Dell Thunderbolt Dock - WD19TBS</span>
+<span class="font-body-sm text-body-sm text-outline truncate">180W Adapter • Dual DisplayPort 1.4 • HDMI 2.0b • Gigabit LAN</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-code-mono text-code-mono text-on-surface-variant font-medium select-all">SN-WD-99410</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Periféricos y Docks</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                DISPONIBLE
+              </span>
+</td>
+<td class="py-space-md px-space-lg">
+<div class="flex items-center gap-1.5 text-secondary font-semibold">
+<span class="material-symbols-outlined text-[16px]">warehouse</span>
+<span class="font-label-md text-label-md">Bodega TI Sede Bogotá (Estante 02)</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-code-mono text-code-mono text-on-surface">05 Mar 2026</span>
+<span class="font-label-sm text-label-sm text-outline">Devolución por Renovación</span>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right pr-space-lg">
+<div class="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+<button class="px-2 py-1 rounded bg-secondary text-on-secondary text-[11px] font-bold uppercase tracking-wider flex items-center gap-1 hover:bg-secondary/90 transition-colors shadow-sm" title="Entregar de Inmediato">
+<span class="material-symbols-outlined text-[14px]">send</span> Entregar
+                </button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Ver Ficha">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination & Footer Controls -->
+<div class="p-space-lg bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-lg text-outline font-body-sm text-body-sm">
+<div class="flex items-center gap-space-xs">
+<span>Filas por página:</span>
+<select class="bg-surface-container-lowest text-on-surface font-semibold rounded-lg px-2 py-1 text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer" id="items-per-page">
+<option value="10">10</option>
+<option value="25">25</option>
+<option value="50">50</option>
+<option value="100">100</option>
+</select>
+</div>
+<span class="text-on-surface-variant">Página <strong class="text-on-surface">1</strong> de <strong>149</strong></span>
+</div>
+<!-- Pagination Navigation Buttons -->
+<div class="flex items-center gap-space-xs">
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest text-outline hover:bg-surface-container-high hover:text-on-surface flex items-center justify-center transition-colors shadow-sm disabled:opacity-40" disabled="" type="button">
+<span class="material-symbols-outlined text-[18px]">first_page</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest text-outline hover:bg-surface-container-high hover:text-on-surface flex items-center justify-center transition-colors shadow-sm disabled:opacity-40" disabled="" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<span class="w-8 h-8 rounded-lg bg-primary text-on-primary font-bold text-body-sm flex items-center justify-center shadow-sm">1</span>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors text-body-sm shadow-sm" type="button">2</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors text-body-sm shadow-sm" type="button">3</button>
+<span class="px-1 text-outline">...</span>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors text-body-sm shadow-sm" type="button">149</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container-high flex items-center justify-center transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">last_page</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Operational Audit & Traceability Bar -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md mb-space-sm">
+<div class="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-bold">Lector de Códigos y Barras</span>
+<span class="font-body-sm text-body-sm text-outline">Soporta pistolas Honeywell y Zebra USB/Bluetooth en caliente.</span>
+</div>
+</div>
+<div class="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[20px]">policy</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-bold">Garantías y Legal TI</span>
+<span class="font-body-sm text-body-sm text-outline">Placas vinculadas automáticamente con pólizas vigentes CASALIMPIA.</span>
+</div>
+</div>
+<div class="p-space-md bg-surface-container-lowest rounded-xl shadow-sm flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-bold">Sincronización Active Directory</span>
+<span class="font-body-sm text-body-sm text-outline">Última conciliación de usuarios y cargos hace 12 minutos.</span>
+</div>
+</div>
+</div>
+<!-- Slide-Over Quick Inspection Panel (Hidden by default, triggered by JS) -->
+<div class="fixed inset-y-0 right-0 w-full max-w-md bg-surface-container-lowest shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out p-space-xl flex flex-col justify-between hidden" id="side-inspection-panel">
+<div>
+<div class="flex items-center justify-between pb-space-lg">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[24px]">devices</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Ficha Rápida de Activo</span>
+</div>
+<button class="w-8 h-8 rounded-lg hover:bg-surface-container flex items-center justify-center text-outline hover:text-on-surface" id="close-side-panel">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="space-y-space-md">
+<div class="p-space-md bg-surface-container rounded-lg">
+<span class="font-label-sm text-label-sm text-outline uppercase font-bold">Placa Institucional</span>
+<p class="font-display-lg text-display-lg font-bold text-primary font-code-mono mt-1">CL-TI-0892</p>
+</div>
+<div class="space-y-space-xs">
+<label class="font-label-sm text-label-sm text-outline uppercase font-bold">Modelo y Configuración</label>
+<p class="font-label-md text-label-md text-on-surface font-semibold">Dell Latitude 5430 Rugged</p>
+<p class="font-body-sm text-body-sm text-outline">Procesador Intel Core i7-1265U vPro (10 Núcleos, hasta 4.80 GHz)</p>
+<p class="font-body-sm text-body-sm text-outline">Memoria RAM: 16 GB DDR4 3200MHz</p>
+<p class="font-body-sm text-body-sm text-outline">Almacenamiento: SSD PCIe M.2 NVMe Clase 40 512 GB</p>
+</div>
+<div class="space-y-space-xs pt-space-xs">
+<label class="font-label-sm text-label-sm text-outline uppercase font-bold">Asignación Actual</label>
+<div class="p-space-md bg-surface-container-low rounded-lg flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold font-label-md">
+              SJ
+            </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold text-on-surface">Santiago Jiménez Castro</span>
+<span class="font-body-sm text-body-sm text-outline">Coordinador TI de Campo</span>
+<span class="font-code-mono text-code-mono text-[11px] text-primary">santiago.jimenez@casalimpia.com.co</span>
+</div>
+</div>
+</div>
+<div class="space-y-space-xs pt-space-xs">
+<label class="font-label-sm text-label-sm text-outline uppercase font-bold">Historial de Mantenimientos</label>
+<ul class="text-body-sm font-body-sm text-on-surface-variant space-y-2">
+<li class="flex items-center justify-between py-1 bg-surface-container-lowest rounded px-2">
+<span>Mantenimiento Preventivo Q4</span>
+<span class="font-code-mono text-outline">15 Nov 2025</span>
+</li>
+<li class="flex items-center justify-between py-1 bg-surface-container-lowest rounded px-2">
+<span>Actualización BIOS y Firmware Dell</span>
+<span class="font-code-mono text-outline">03 Ago 2025</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="pt-space-lg flex items-center gap-space-md">
+<button class="w-full h-10 bg-primary text-on-primary rounded-lg font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shadow-sm">
+        Ver Expediente Completo
+      </button>
+<button class="w-12 h-10 bg-surface-container rounded-lg flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" id="btn-print-act" title="Reimprimir Acta">
+<span class="material-symbols-outlined text-[20px]">print</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  // Dynamic client-side interactivity for Table Selection, Filtering & Drawer
+  (function() {
+    // Select All Checkbox logic
+    const selectAllCheckbox = document.getElementById('select-all-assets');
+    const assetCheckboxes = document.querySelectorAll('.asset-checkbox');
+
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', function(e) {
+        assetCheckboxes.forEach(cb => {
+          cb.checked = e.target.checked;
+        });
+      });
+    }
+
+    // Toggle Critical Filters Section
+    const toggleCritBtn = document.getElementById('toggle-critical-filters');
+    const criticalDrawer = document.getElementById('critical-drawer');
+
+    if (toggleCritBtn && criticalDrawer) {
+      toggleCritBtn.addEventListener('click', function() {
+        if (criticalDrawer.classList.contains('hidden')) {
+          criticalDrawer.classList.remove('hidden');
+          toggleCritBtn.classList.add('bg-primary', 'text-on-primary');
+          toggleCritBtn.classList.remove('bg-primary-fixed', 'text-on-primary-fixed');
+        } else {
+          criticalDrawer.classList.add('hidden');
+          toggleCritBtn.classList.remove('bg-primary', 'text-on-primary');
+          toggleCritBtn.classList.add('bg-primary-fixed', 'text-on-primary-fixed');
+        }
+      });
+    }
+
+    // Debounced search emulation
+    const searchInput = document.getElementById('search-input');
+    const currentCount = document.getElementById('current-visible-count');
+    let debounceTimer;
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function(e) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          const query = e.target.value.toLowerCase().trim();
+          const rows = document.querySelectorAll('#assets-table tbody tr');
+          let visibleRows = 0;
+
+          rows.forEach(row => {
+            const textContent = row.textContent.toLowerCase();
+            if (textContent.includes(query)) {
+              row.style.display = '';
+              visibleRows++;
+            } else {
+              row.style.display = 'none';
+            }
+          });
+
+          if (currentCount) {
+            currentCount.textContent = visibleRows;
+          }
+        }, 250);
+      });
+    }
+
+    // Reset filters button
+    const btnReset = document.getElementById('btn-reset-filters');
+    if (btnReset) {
+      btnReset.addEventListener('click', function() {
+        if (searchInput) searchInput.value = '';
+        const catSelect = document.getElementById('filter-category');
+        const stSelect = document.getElementById('filter-status');
+        const locSelect = document.getElementById('filter-location');
+        if (catSelect) catSelect.value = 'all';
+        if (stSelect) stSelect.value = 'all';
+        if (locSelect) locSelect.value = 'all';
+
+        const rows = document.querySelectorAll('#assets-table tbody tr');
+        rows.forEach(row => row.style.display = '');
+        if (currentCount) currentCount.textContent = rows.length;
+      });
+    }
+
+    // Inspection Side-Panel triggers
+    const sidePanel = document.getElementById('side-inspection-panel');
+    const closeSideBtn = document.getElementById('close-side-panel');
+    const inspectBtns = document.querySelectorAll('button[title*="Ver Ficha Técnica"]');
+
+    function openInspection() {
+      if (sidePanel) {
+        sidePanel.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          sidePanel.classList.remove('translate-x-full');
+        });
+      }
+    }
+
+    function closeInspection() {
+      if (sidePanel) {
+        sidePanel.classList.add('translate-x-full');
+        setTimeout(() => {
+          sidePanel.classList.add('hidden');
+        }, 300);
+      }
+    }
+
+    inspectBtns.forEach(btn => {
+      btn.addEventListener('click', openInspection);
+    });
+
+    if (closeSideBtn) {
+      closeSideBtn.addEventListener('click', closeInspection);
+    }
+  })();
+</script></main><footer class="w-full bg-surface-container-lowest shadow-[0_-1px_4px_rgba(0,0,0,0.02)] py-space-md px-gutter-lg"><div class="w-full flex flex-col sm:flex-row items-center justify-between gap-space-xs text-outline"><span class="font-body-sm text-body-sm">CASALIMPIA S.A - Tecnológico de Antioquia PPI 2026</span><div class="flex items-center gap-space-md font-code-mono text-code-mono text-outline-variant"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-secondary"></span>Sistema Operativo</span><span>v2.4.0</span></div></div></footer></div></body></html>
