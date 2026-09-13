@@ -1,5 +1,5 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
@@ -8,17 +8,16 @@ import { getFirestore } from "firebase/firestore";
 // Your web app's Firebase configuration
 // IMPORTANT: Reemplaza estos valores con los de tu proyecto en Firebase Console.
 const firebaseConfig = {
-  apiKey: "AIzaSyAjzdOdRdIx5xNk89kwY3RgNYpCUaPhCGY",
-  authDomain: "desarrolloweb-2ebe5.firebaseapp.com",
-  projectId: "desarrolloweb-2ebe5",
-  storageBucket: "desarrolloweb-2ebe5.firebasestorage.app",
-  messagingSenderId: "955494178458",
-  appId: "1:955494178458:web:7a26ef518f3650e8810923",
-  measurementId: "G-MNFVHBE15E"
+  apiKey: "AIzaSyCYQEojGcBE5G-t-fxjzdH7MIHa4fk2kn0",
+  authDomain: "desarrolloweb-e8531.firebaseapp.com",
+  projectId: "desarrolloweb-e8531",
+  storageBucket: "desarrolloweb-e8531.firebasestorage.app",
+  messagingSenderId: "986911853700",
+  appId: "1:986911853700:web:7f98d474de54ab495006d1"
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Firebase services
 export const auth = getAuth(app);

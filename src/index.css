@@ -12,3 +12,67 @@
 ::-webkit-scrollbar {
   display: none;
 }
+
+/* ==================================================== */
+/* ESTILOS DE IMPRESIÓN Y PDF OFICIAL (SIN SCREENSHOT)  */
+/* ==================================================== */
+@media print {
+  /* Ocultar elementos de navegación, menús, botones, inputs y pies de página de la app */
+  aside,
+  header,
+  footer,
+  nav,
+  button,
+  input,
+  select,
+  textarea,
+  .no-print,
+  .fixed,
+  .sticky,
+  .stepper-container,
+  [role="button"] {
+    display: none !important;
+  }
+
+  body, html {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Desactivar padding del sidebar */
+  .pl-72 {
+    padding-left: 0 !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ocultar la columna de formulario izquierda al imprimir en pantalla de entrega */
+  .xl\:col-span-7 {
+    display: none !important;
+  }
+
+  /* La columna derecha del acta se expande a ancho completo para impresión */
+  .xl\:col-span-5 {
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    top: 0 !important;
+  }
+
+  /* Contenedor oficial del acta */
+  .acta-print-card {
+    border: 1.5px solid #00355f !important;
+    box-shadow: none !important;
+    padding: 20px !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+    width: 100% !important;
+  }
+}
