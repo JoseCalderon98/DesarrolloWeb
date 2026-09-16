@@ -710,16 +710,16 @@ export default function RegistroEntrega() {
             <div className="flex items-center gap-space-md pl-space-xs">
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="font-label-md text-label-md text-on-surface font-bold">
-                  {deliverer.nombre}
+                  {storedSession?.nombre || 'Funcionario SGI'}
                 </span>
                 <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                  {deliverer.cargo || deliverer.rol || 'Administrador TI'}
+                  {storedSession?.cargo || storedSession?.rol || 'Administrador TI'}
                 </span>
               </div>
               <img 
                 alt="Foto Perfil" 
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" 
-                src={deliverer.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
+                src={storedSession?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
               />
               <button 
                 onClick={handleLogout} 

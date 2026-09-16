@@ -92,6 +92,17 @@ export default function Inventario() {
   // 3. Filtrado dinámico de la tabla
   const filteredEquipos = useMemo(() => {
     return equipos.filter((item) => {
+      // Filtrar visualización para Empleados (solo ven lo suyo)
+      if (currentUser?.rol === 'Empleado') {
+        const asigEmail = (item.asignatario_email || '').toLowerCase();
+        const asigNom = (item.asignatario || '').trim().toLowerCase();
+        const miEmail = (currentUser?.email || '').toLowerCase();
+        const miNom = (currentUser?.nombre || '').trim().toLowerCase();
+        if (asigEmail !== miEmail && asigNom !== miNom) {
+          return false;
+        }
+      }
+
       // Filtro de texto
       if (searchQuery.trim()) {
         const queryLower = searchQuery.toLowerCase().trim();
