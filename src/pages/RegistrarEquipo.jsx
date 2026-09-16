@@ -4,8 +4,10 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getStoredUser } from '../utils/userHelpers';
 
 export default function RegistrarEquipo() {
+  const storedSession = getStoredUser();
   const navigate = useNavigate();
   const handleLogout = async () => {
     try {
@@ -60,9 +62,9 @@ export default function RegistrarEquipo() {
       <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         <div className="flex flex-col flex-1 overflow-y-auto">
           <div className="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low">
-            <img alt="Logo SGI CASALIMPIA" className="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VeTp2XUhWy_4lVUnS_eq24zKPiqAOa8MAt-2aMEz385VkTAcAuDMWkXIYMCipxF3WwQnED5QcovIMWJpZQOxp2WLOHGMUv3FOI6OUkGrGmYDxOoYfXFkHZrYphhgGp8jRZsAZ5a3VMJ7vybCppSvuB3o3WYIazXIIK6lOJutHKbrhX7QfEo-ZBRoIZ6GGX0adrV4meB9nogMZfeePRqWaOdiPFX8LAuibs1jjaUrSDLYH9YTVguEcZwTsn"/>
+            <img alt="Logo SGI CASALIMPIA" className="h-9 w-9 object-contain shrink-0" src="/logo-icon.svg"/>
             <div className="flex flex-col">
-              <span className="font-headline-sm text-headline-sm text-primary leading-none">SGI CASALIMPIA</span>
+              <span className="font-headline-sm text-headline-sm text-primary leading-none font-bold">SGI CASALIMPIA</span>
               <span className="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span>
             </div>
           </div>
@@ -84,6 +86,32 @@ export default function RegistrarEquipo() {
             <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0">
               <span className="material-symbols-outlined text-[16px] text-secondary">location_on</span>
               <span className="font-label-sm text-label-sm font-semibold truncate">Sede Principal Av. El Dorado #100-80, Bogotá</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-space-md shrink-0">
+            <div className="h-6 w-px bg-surface-container-highest"></div>
+            <div className="flex items-center gap-space-md pl-space-xs">
+              <div className="flex flex-col text-right hidden sm:flex">
+                <span className="font-label-md text-label-md text-on-surface font-bold">
+                  {storedSession?.nombre || 'Funcionario SGI'}
+                </span>
+                <span className="font-label-sm text-label-sm text-secondary font-semibold">
+                  {storedSession?.cargo || storedSession?.rol || 'Administrador TI'}
+                </span>
+              </div>
+              <img 
+                alt="Foto Perfil" 
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" 
+                src={storedSession?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
+              />
+              <button 
+                onClick={handleLogout} 
+                className="hover:bg-error-container hover:text-error text-outline p-1.5 rounded-full transition-colors cursor-pointer" 
+                title="Cerrar Sesión"
+              >
+                <span className="material-symbols-outlined text-[20px]">logout</span>
+              </button>
             </div>
           </div>
         </header>

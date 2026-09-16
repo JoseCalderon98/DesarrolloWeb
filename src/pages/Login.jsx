@@ -3,6 +3,10 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import { setStoredUser, initialPPIMembers } from '../utils/userHelpers';
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -18,12 +22,49 @@ export default function Login() {
     setErrorMsg('');
     
     try {
-      // Intentar iniciar sesión, validando que exista en la Firebase auth
-      await signInWithEmailAndPassword(auth, username, password);
+      let profileUser = null;
+      const cleanUsername = username.trim();
+
+      // Optimizacion: Intentar inicio con Firebase Auth y buscar perfil Firestore concurrentemente
+      const ppiMatch = initialPPIMembers.find(m => m.email.toLowerCase() === cleanUsername.toLowerCase());
+      
+      const authPromise = signInWithEmailAndPassword(auth, cleanUsername, password);
+      
+      const q = query(collection(db, "usuarios"), where("email", "==", cleanUsername));
+      const dbPromise = getDocs(q).catch(dbErr => {
+        console.warn("Could not query firestore user:", dbErr);
+        return null;
+      });
+
+      const [, snap] = await Promise.all([authPromise, dbPromise]);
+      
+      if (snap && !snap.empty) {
+        profileUser = { id: snap.docs[0].id, ...snap.docs[0].data() };
+      }
+
+      // 3. Fallback a integrantes PPI si aún no se ha sembrado la BD
+      if (!profileUser) {
+        const ppiUser = initialPPIMembers.find(m => m.email.toLowerCase() === cleanUsername.toLowerCase());
+        if (ppiUser) {
+          profileUser = ppiUser;
+        } else {
+          profileUser = {
+            nombre: cleanUsername.split('@')[0],
+            email: cleanUsername,
+            rol: role === 'admin' ? 'Administrador' : 'Soporte TI',
+            cargo: role === 'admin' ? 'Ingeniero Administrador TI' : 'Técnico de Soporte',
+            area: 'Tecnología e Infraestructura',
+            sede: 'Sede Bogotá Principal',
+            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'
+          };
+        }
+      }
+
+      // Guardar sesión activa
+      setStoredUser(profileUser);
       navigate('/inventario');
       
     } catch (error) {
-      // Si el usuario no existe o la contraseña es inválida
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-login-credentials') {
         setErrorMsg('Credenciales inválidas. El usuario no está registrado o la contraseña es incorrecta.');
       } else {
@@ -34,14 +75,22 @@ export default function Login() {
     }
   };
 
-  const fillDemo = (demoRole) => {
-    if (demoRole === 'admin') {
+  const fillDemo = (demoKey) => {
+    if (demoKey === 'alexis') {
       setUsername('alexis.cruz@casalimpia.com.co');
-      setPassword('AdminCasalimpia2026*');
+      setPassword('hospi123');
       setRole('admin');
-    } else {
-      setUsername('soporte.hardware@casalimpia.com.co');
-      setPassword('TechSoporte2026!');
+    } else if (demoKey === 'alejandro') {
+      setUsername('alejandro.calderon@casalimpia.com.co');
+      setPassword('hospi123');
+      setRole('admin');
+    } else if (demoKey === 'santiago') {
+      setUsername('santiago.jimenez@casalimpia.com.co');
+      setPassword('hospi123');
+      setRole('soporte');
+    } else if (demoKey === 'juan') {
+      setUsername('juan.gutierrez@casalimpia.com.co');
+      setPassword('hospi123');
       setRole('soporte');
     }
   };
@@ -131,7 +180,7 @@ export default function Login() {
             <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md mb-space-lg">
                 <div className="flex items-center">
-                  <img alt="Logo SGI CASALIMPIA" className="h-10 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1VeTp2XUhWy_4lVUnS_eq24zKPiqAOa8MAt-2aMEz385VkTAcAuDMWkXIYMCipxF3WwQnED5QcovIMWJpZQOxp2WLOHGMUv3FOI6OUkGrGmYDxOoYfXFkHZrYphhgGp8jRZsAZ5a3VMJ7vybCppSvuB3o3WYIazXIIK6lOJutHKbrhX7QfEo-ZBRoIZ6GGX0adrV4meB9nogMZfeePRqWaOdiPFX8LAuibs1jjaUrSDLYH9YTVguEcZwTsn"/>
+                  <img alt="Logo SGI CASALIMPIA" className="h-10 w-auto object-contain" src="/logo-casalimpia.svg"/>
                 </div>
                 <div className="inline-flex items-center gap-space-xs bg-surface-container px-space-md py-space-xs rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
@@ -219,22 +268,30 @@ export default function Login() {
               </form>
 
               <div className="mt-space-lg pt-space-md bg-surface-container-low p-space-md rounded-lg">
-                 <div className="flex items-center justify-between mb-space-sm">
-                   <div className="flex items-center gap-space-xs">
-                     <span className="material-symbols-outlined text-primary text-body-md">rocket_launch</span>
-                     <span className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface font-bold">Demo Preset</span>
-                   </div>
-                 </div>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
-                    <button className="h-9 px-space-md rounded bg-surface-container-lowest hover:bg-surface-bright text-on-surface font-label-sm text-label-sm flex items-center gap-space-xs" onClick={() => fillDemo('admin')} type="button">
-                      <span className="w-2 h-2 rounded-full bg-primary"></span>
-                      <span>Admin TI</span>
-                    </button>
-                    <button className="h-9 px-space-md rounded bg-surface-container-lowest hover:bg-surface-bright text-on-surface font-label-sm text-label-sm flex items-center gap-space-xs" onClick={() => fillDemo('tecnico')} type="button">
-                      <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                      <span>Soporte TI</span>
-                    </button>
-                 </div>
+                <div className="flex items-center justify-between mb-space-sm">
+                  <div className="flex items-center gap-space-xs">
+                    <span className="material-symbols-outlined text-primary text-body-md">badge</span>
+                    <span className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface font-bold">Cuentas PPI CASALIMPIA</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+                  <button className="h-9 px-space-sm rounded bg-surface-container-lowest hover:bg-surface-bright text-on-surface font-label-sm text-[11px] flex items-center gap-1.5 cursor-pointer shadow-xs truncate" onClick={() => fillDemo('alexis')} type="button" title="Alexis Cruz - Admin TI">
+                    <span className="w-2 h-2 rounded-full bg-primary shrink-0"></span>
+                    <span className="truncate">Alexis Cruz (Admin)</span>
+                  </button>
+                  <button className="h-9 px-space-sm rounded bg-surface-container-lowest hover:bg-surface-bright text-on-surface font-label-sm text-[11px] flex items-center gap-1.5 cursor-pointer shadow-xs truncate" onClick={() => fillDemo('alejandro')} type="button" title="Alejandro Calderón - Admin TI">
+                    <span className="w-2 h-2 rounded-full bg-primary shrink-0"></span>
+                    <span className="truncate">Alejandro C. (Admin)</span>
+                  </button>
+                  <button className="h-9 px-space-sm rounded bg-surface-container-lowest hover:bg-surface-bright text-on-surface font-label-sm text-[11px] flex items-center gap-1.5 cursor-pointer shadow-xs truncate" onClick={() => fillDemo('santiago')} type="button" title="Santiago Jiménez - Soporte TI">
+                    <span className="w-2 h-2 rounded-full bg-secondary shrink-0"></span>
+                    <span className="truncate">Santiago J. (Soporte)</span>
+                  </button>
+                  <button className="h-9 px-space-sm rounded bg-surface-container-lowest hover:bg-surface-bright text-on-surface font-label-sm text-[11px] flex items-center gap-1.5 cursor-pointer shadow-xs truncate" onClick={() => fillDemo('juan')} type="button" title="Juan David Gutiérrez - Empleado">
+                    <span className="w-2 h-2 rounded-full bg-outline shrink-0"></span>
+                    <span className="truncate">Juan David (Empleado)</span>
+                  </button>
+                </div>
               </div>
 
             </div>
