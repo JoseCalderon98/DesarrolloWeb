@@ -7,9 +7,11 @@ import {
   updateDoc,
   deleteDoc,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  where,
+  addDoc
 } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { exportToCSV, parseCSV, initialDemoAssets } from '../utils/assetHelpers';
@@ -19,6 +21,7 @@ export default function Inventario() {
   const currentUser = getStoredUser();
   const [equipos, setEquipos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
   const navigate = useNavigate();
@@ -44,6 +47,20 @@ export default function Inventario() {
   const [parsedImportAssets, setParsedImportAssets] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Novedad modal (Empleado)
+  const [showNovedadModal, setShowNovedadModal] = useState(false);
+  const [novedadEquipoDestino, setNovedadEquipoDestino] = useState(null);
+  const [nuevaNovedad, setNuevaNovedad] = useState({
+    tipo: 'Mantenimiento Correctivo',
+    descripcion: ''
+  });
+
+  const [assetHistory, setAssetHistory] = useState([]);
+
+  // IT Novelty Viewer
+  const [novedadesTI, setNovedadesTI] = useState([]);
+  const [activeTab, setActiveTab] = useState('INVENTARIO');
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -53,15 +70,33 @@ export default function Inventario() {
     }
   };
 
+  // 0. Esperar a que Firebase Auth inicialice el token antes de consultar Firestore
+  useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      setAuthReady(true);
+    });
+    return () => unsubAuth();
+  }, []);
+
   // 1. Suscripción en tiempo real a la colección 'equipos'
   useEffect(() => {
+    if (!authReady) return; // REGLA CRITICA: No disparar query sin token
+
+    // Se usa una consulta general para evitar errores de permisos ('where' constraint) en Firestores locales no configurados
     const q = query(collection(db, "equipos"));
+    
     const unsub = onSnapshot(q,
       (snapshot) => {
         let list = [];
         snapshot.forEach((docSnap) => {
           list.push({ id: docSnap.id, ...docSnap.data() });
         });
+
+        // Filtrado RBAC estricto en el lado del cliente (si las reglas de Firebase limitan el uso de where)
+        if (currentUser?.rol === 'Empleado') {
+          list = list.filter(item => item.asignatario_email === currentUser.email);
+        }
+
         setEquipos(list);
         setLoading(false);
         setErrorMsg(null);
@@ -73,7 +108,41 @@ export default function Inventario() {
       }
     );
     return () => unsub();
-  }, []);
+  }, [authReady, currentUser]);
+
+  // 1b. Suscripción a novedades (Sólo TI/Admin)
+  useEffect(() => {
+    if (!authReady) return;
+    if (currentUser?.rol === 'Empleado') return;
+    const qNovedades = query(collection(db, "novedades"));
+    const unsubNov = onSnapshot(qNovedades,
+      (snapshot) => {
+        let list = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        // Sort newest first theoretically but let's just reverse or keep as is
+        setNovedadesTI(list.reverse());
+      },
+      (err) => console.error("Error fetching novedades:", err)
+    );
+    return () => unsubNov();
+  }, [authReady, currentUser]);
+
+  // 1c. Historial de Novedades del activo seleccionado
+  useEffect(() => {
+    if (!authReady || !selectedAssetForDetail) {
+      setAssetHistory([]);
+      return;
+    }
+    const qHistory = query(collection(db, "novedades"), where("equipo_id", "==", selectedAssetForDetail.id));
+    const unsubHist = onSnapshot(qHistory, (snapshot) => {
+      let list = [];
+      snapshot.forEach(docSnap => list.push({ id: docSnap.id, ...docSnap.data() }));
+      setAssetHistory(list);
+    });
+    return () => unsubHist();
+  }, [authReady, selectedAssetForDetail]);
 
   // 2. Cálculos de KPIs dinámicos
   const totalEquipos = equipos.length;
@@ -82,6 +151,8 @@ export default function Inventario() {
   const mantenimiento = equipos.filter(e => e.estado === 'MANTENIMIENTO' || e.estado === 'REVISION').length;
   const bajas = equipos.filter(e => e.estado === 'BAJA').length;
   const tasaOperativa = totalEquipos === 0 ? 0 : Math.round(((disponibles + asignados) / totalEquipos) * 100);
+  
+  const pendingNovedadesCount = novedadesTI.filter(n => n.estado === 'PENDIENTE TI').length;
 
   // Segmentos prioritarios dinámicos
   const laptopsDisponiblesCount = equipos.filter(e =>
@@ -92,17 +163,6 @@ export default function Inventario() {
   // 3. Filtrado dinámico de la tabla
   const filteredEquipos = useMemo(() => {
     return equipos.filter((item) => {
-      // Filtrar visualización para Empleados (solo ven lo suyo)
-      if (currentUser?.rol === 'Empleado') {
-        const asigEmail = (item.asignatario_email || '').toLowerCase();
-        const asigNom = (item.asignatario || '').trim().toLowerCase();
-        const miEmail = (currentUser?.email || '').toLowerCase();
-        const miNom = (currentUser?.nombre || '').trim().toLowerCase();
-        if (asigEmail !== miEmail && asigNom !== miNom) {
-          return false;
-        }
-      }
-
       // Filtro de texto
       if (searchQuery.trim()) {
         const queryLower = searchQuery.toLowerCase().trim();
@@ -250,6 +310,83 @@ export default function Inventario() {
     }
   };
 
+  // Reportar Novedad (Empleado)
+  const handleReportNovedad = async (e) => {
+    e.preventDefault();
+    if (!novedadEquipoDestino) return;
+    try {
+      setIsProcessing(true);
+      await addDoc(collection(db, "novedades"), {
+        equipo_id: novedadEquipoDestino.id,
+        placa: novedadEquipoDestino.placa,
+        equipo_nombre: novedadEquipoDestino.equipo_nombre,
+        tipo: nuevaNovedad.tipo,
+        descripcion: nuevaNovedad.descripcion,
+        reportado_por: currentUser.email,
+        reportado_por_nombre: currentUser.nombre || 'Empleado',
+        fecha_reporte: serverTimestamp(),
+        estado: 'PENDIENTE TI'
+      });
+
+      setShowNovedadModal(false);
+      setNovedadEquipoDestino(null);
+      setNuevaNovedad({ tipo: 'Mantenimiento Correctivo', descripcion: '' });
+      setSuccessMsg("Novedad reportada: El equipo de TI ha sido notificado exitosamente.");
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err) {
+      alert("Error al reportar novedad: " + err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Gestionar Novedad (TI/Admin)
+  const handleManageNovedad = async (novedad, accion) => {
+    // Regla de Negocio: No se puede mandar a taller o dar de baja un equipo que sigue asignado.
+    if (accion === 'MANTENIMIENTO' || accion === 'DADO DE BAJA') {
+      const targetEq = equipos.find(e => e.id === novedad.equipo_id);
+      if (targetEq && (targetEq.estado === 'ASIGNADO' || (targetEq.asignatario !== 'Bodega Centralizada TI' && targetEq.asignatario !== ''))) {
+        alert("⚠️ Acción Bloqueada: El equipo aún se encuentra asignado a un empleado. Obligatoriamente debes formalizar la 'Devolución' del equipo en el módulo respectivo para desvincularlo antes de pasarlo a Mantenimiento o Darlo de Baja.");
+        return;
+      }
+    }
+
+    let comentario = null;
+    if (accion === 'RESUELTO' || accion === 'DADO DE BAJA' || accion === 'MANTENIMIENTO') {
+      comentario = window.prompt("Ingrese un comentario sobre la gestión de esta novedad (se guardará en la Hoja de Vida del activo):");
+      if (comentario === null) return; // User cancelled the prompt
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      const updateData = {
+        estado: accion,
+        fecha_resolucion: serverTimestamp()
+      };
+      if (comentario) updateData.comentario_cierre = comentario;
+
+      // Actualizar doc novedad
+      await updateDoc(doc(db, "novedades", novedad.id), updateData);
+      
+      // Actualizar doc equipo
+      const nuevoEstadoEquipo = accion === 'MANTENIMIENTO' ? 'MANTENIMIENTO' : accion === 'DADO DE BAJA' ? 'BAJA' : 'DISPONIBLE';
+      const equipoRef = doc(db, "equipos", novedad.equipo_id);
+      
+      await updateDoc(equipoRef, {
+        estado: nuevoEstadoEquipo,
+        ultimo_movimiento: `Novedad TI: Caso establecido como ${accion}${comentario ? ` - ${comentario}` : ''}`
+      });
+
+      setSuccessMsg(`Caso de novedad establecido como ${accion}.`);
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err) {
+      alert("Error al gestionar la novedad: " + err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Cargar datos semilla si la BD está vacía
   const handleSeedDemoData = async () => {
     try {
@@ -376,20 +513,24 @@ export default function Inventario() {
                 <span className="material-symbols-outlined text-[16px] text-outline">expand_more</span>
               </div>
               <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs">
-                <a
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/entrega-hardware')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">post_add</span>
-                  <span className="font-body-sm text-body-sm">Nueva Entrega / Acta</span>
-                </a>
-                <a
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/devoluciones')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                  <span className="font-body-sm text-body-sm">Devoluciones</span>
-                </a>
+                {currentUser?.rol !== 'Empleado' && (
+                  <a
+                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                    onClick={() => navigate('/entrega-hardware')}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">post_add</span>
+                    <span className="font-body-sm text-body-sm">Nueva Entrega / Acta</span>
+                  </a>
+                )}
+                {currentUser?.rol !== 'Empleado' && (
+                  <a
+                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                    onClick={() => navigate('/devoluciones')}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
+                    <span className="font-body-sm text-body-sm">Devoluciones</span>
+                  </a>
+                )}
                 <a
                   className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
                   onClick={() => navigate('/historial')}
@@ -399,27 +540,32 @@ export default function Inventario() {
                 </a>
               </div>
             </div>
-            <a
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => setFilterStatus('MANTENIMIENTO')}
-            >
-              <span className="material-symbols-outlined text-[20px]">build_circle</span>
-              <span className="font-body-md text-body-md">Novedades y Mantenimiento</span>
-            </a>
-            <a
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/usuarios-roles')}
-            >
-              <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
-              <span className="font-body-md text-body-md">Gestión de Usuarios y Roles</span>
-            </a>
-            <a
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => exportToCSV(filteredEquipos.length > 0 ? filteredEquipos : equipos, 'auditoria_iso20000_casalimpia.csv')}
-            >
-              <span className="material-symbols-outlined text-[20px]">verified_user</span>
-              <span className="font-body-md text-body-md">Reportes y Auditoría</span>
-            </a>
+            
+            {currentUser?.rol !== 'Empleado' && (
+              <>
+                <a
+                  className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                  onClick={() => setFilterStatus('MANTENIMIENTO')}
+                >
+                  <span className="material-symbols-outlined text-[20px]">build_circle</span>
+                  <span className="font-body-md text-body-md">Novedades y Mantenimiento</span>
+                </a>
+                <a
+                  className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                  onClick={() => navigate('/usuarios-roles')}
+                >
+                  <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                  <span className="font-body-md text-body-md">Gestión de Usuarios y Roles</span>
+                </a>
+                <a
+                  className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                  onClick={() => exportToCSV(filteredEquipos.length > 0 ? filteredEquipos : equipos, 'auditoria_iso20000_casalimpia.csv')}
+                >
+                  <span className="material-symbols-outlined text-[20px]">verified_user</span>
+                  <span className="font-body-md text-body-md">Reportes y Auditoría</span>
+                </a>
+              </>
+            )}
           </nav>
         </div>
         <div className="p-space-lg m-space-md bg-surface-container rounded-xl flex items-center gap-space-md">
@@ -467,11 +613,13 @@ export default function Inventario() {
               aria-label="Notificaciones"
               className="relative h-9 w-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
               type="button"
-              onClick={() => alert(`Sistema Operativo: ${mantenimiento} equipos en novedad o revisión técnica.`)}
+              onClick={() => alert(`Notificaciones:\n- ${pendingNovedadesCount} novedades pendientes\n- ${mantenimiento} equipos en revisión técnica.`)}
             >
               <span className="material-symbols-outlined text-[20px]">notifications</span>
-              {mantenimiento > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span>
+              {pendingNovedadesCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-[16px] flex items-center justify-center rounded-full bg-error text-on-error text-[9px] font-bold">
+                  {pendingNovedadesCount}
+                </span>
               )}
             </button>
             <div className="h-6 w-px bg-surface-container-highest"></div>
@@ -521,15 +669,17 @@ export default function Inventario() {
 
               {/* Botones de Acción Rápida */}
               <div className="flex flex-wrap items-center gap-space-sm shrink-0">
-                <button
-                  onClick={() => setShowImportModal(true)}
-                  className="flex items-center gap-space-xs px-space-md h-9 bg-surface-container-lowest text-on-surface rounded-lg font-label-md text-label-md shadow-sm hover:bg-surface-container-high transition-colors cursor-pointer"
-                  id="btn-import-lot"
-                  type="button"
-                >
-                  <span className="material-symbols-outlined text-[18px] text-primary">upload_file</span>
-                  <span>Importar Lote (CSV/XLSX)</span>
-                </button>
+                {currentUser?.rol !== 'Empleado' && (
+                  <button
+                    onClick={() => setShowImportModal(true)}
+                    className="flex items-center gap-space-xs px-space-md h-9 bg-surface-container-lowest text-on-surface rounded-lg font-label-md text-label-md shadow-sm hover:bg-surface-container-high transition-colors cursor-pointer"
+                    id="btn-import-lot"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-primary">upload_file</span>
+                    <span>Importar Lote (CSV/XLSX)</span>
+                  </button>
+                )}
                 <button
                   onClick={() => exportToCSV(filteredEquipos.length > 0 ? filteredEquipos : equipos, 'reporte_activos_rf08.csv')}
                   className="flex items-center gap-space-xs px-space-md h-9 bg-surface-container-lowest text-on-surface rounded-lg font-label-md text-label-md shadow-sm hover:bg-surface-container-high transition-colors cursor-pointer"
@@ -539,17 +689,47 @@ export default function Inventario() {
                   <span className="material-symbols-outlined text-[18px] text-secondary">table_chart</span>
                   <span>Exportar Reporte (RF-08)</span>
                 </button>
-                <button
-                  onClick={() => navigate('/registrar-equipo')}
-                  className="flex items-center gap-space-xs px-space-lg h-9 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-sm hover:bg-primary-container transition-all cursor-pointer"
-                  id="btn-register-asset"
-                  type="button"
-                >
-                  <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                  <span>+ Registrar Nuevo Equipo (RF-02)</span>
-                </button>
+                {currentUser?.rol !== 'Empleado' && (
+                  <button
+                    onClick={() => navigate('/registrar-equipo')}
+                    className="flex items-center gap-space-xs px-space-lg h-9 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-sm hover:bg-primary-container transition-all cursor-pointer"
+                    id="btn-register-asset"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                    <span>+ Registrar Nuevo Equipo (RF-02)</span>
+                  </button>
+                )}
               </div>
             </div>
+
+            {currentUser?.rol !== 'Empleado' && (
+              <div className="flex items-center gap-space-md mb-space-lg bg-surface-container-lowest p-2 rounded-xl shadow-sm border border-surface-container w-fit">
+                <button
+                  onClick={() => setActiveTab('INVENTARIO')}
+                  className={`px-space-lg py-2 rounded-lg font-label-md font-bold transition-all flex items-center gap-2 ${activeTab === 'INVENTARIO' ? 'bg-primary text-on-primary shadow-sm' : 'text-outline hover:bg-surface-container cursor-pointer'}`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">devices</span>
+                  Inventario General
+                </button>
+                <div className="w-px h-6 bg-surface-container-high"></div>
+                <button
+                  onClick={() => setActiveTab('NOVEDADES')}
+                  className={`px-space-lg py-2 rounded-lg font-label-md font-bold transition-all flex items-center gap-2 ${activeTab === 'NOVEDADES' ? 'bg-error-container text-error shadow-sm' : 'text-outline hover:bg-surface-container cursor-pointer'}`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">report</span>
+                  Gestión de Novedades
+                  {pendingNovedadesCount > 0 && (
+                    <span className="ml-1 bg-error text-on-error min-w-[20px] px-1 h-5 rounded-full flex items-center justify-center text-[11px]">
+                      {pendingNovedadesCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'INVENTARIO' && (
+              <div className="animate-fadeIn flex flex-col w-full">
 
             {/* SECCIÓN DE TARJETAS KPI (Dinámicas) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
@@ -888,14 +1068,16 @@ export default function Inventario() {
                   <thead>
                     <tr className="bg-surface-container-low text-outline font-label-sm text-label-sm uppercase tracking-wider select-none">
                       <th className="py-space-md px-space-md w-10 text-center">
-                        <input
-                          className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer accent-primary"
-                          id="select-all-assets"
-                          title="Seleccionar todos en esta página"
-                          type="checkbox"
-                          checked={isAllOnPageSelected}
-                          onChange={handleSelectAll}
-                        />
+                        {currentUser?.rol !== 'Empleado' && (
+                          <input
+                            className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer accent-primary"
+                            id="select-all-assets"
+                            title="Seleccionar todos en esta página"
+                            type="checkbox"
+                            checked={isAllOnPageSelected}
+                            onChange={handleSelectAll}
+                          />
+                        )}
                       </th>
                       <th className="py-space-md px-space-md font-bold">Placa / Código</th>
                       <th className="py-space-md px-space-lg font-bold">Equipo y Especificaciones</th>
@@ -978,12 +1160,14 @@ export default function Inventario() {
                         return (
                           <tr key={equipo.id} className={`hover:bg-surface-container transition-colors group ${isSelected ? 'bg-primary-container/10' : ''}`}>
                             <td className="py-space-md px-space-md text-center">
-                              <input
-                                className="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary"
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => handleToggleSelectOne(equipo.id)}
-                              />
+                              {currentUser?.rol !== 'Empleado' && (
+                                <input
+                                  className="asset-checkbox w-4 h-4 rounded text-primary cursor-pointer accent-primary"
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleSelectOne(equipo.id)}
+                                />
+                              )}
                             </td>
                             <td className="py-space-md px-space-md">
                               <div className="flex items-center gap-space-xs">
@@ -1062,21 +1246,25 @@ export default function Inventario() {
                                   <span className="material-symbols-outlined text-[18px]">visibility</span>
                                 </button>
                                 {/* Botón Editar */}
-                                <button
-                                  onClick={() => setAssetToEdit(equipo)}
-                                  className="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors cursor-pointer"
-                                  title="Editar activo"
-                                >
-                                  <span className="material-symbols-outlined text-[18px]">edit</span>
-                                </button>
+                                {currentUser?.rol !== 'Empleado' && (
+                                  <button
+                                    onClick={() => setAssetToEdit(equipo)}
+                                    className="p-1.5 rounded-md hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors cursor-pointer"
+                                    title="Editar activo"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                                  </button>
+                                )}
                                 {/* Botón Eliminar */}
-                                <button
-                                  onClick={() => handleDeleteOne(equipo)}
-                                  className="p-1.5 rounded-md hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
-                                  title="Eliminar activo"
-                                >
-                                  <span className="material-symbols-outlined text-[18px]">delete</span>
-                                </button>
+                                {currentUser?.rol !== 'Empleado' && (
+                                  <button
+                                    onClick={() => handleDeleteOne(equipo)}
+                                    className="p-1.5 rounded-md hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
+                                    title="Eliminar activo"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1157,6 +1345,114 @@ export default function Inventario() {
                 </div>
               </div>
             </div>
+            </div>
+            )}
+
+            {activeTab === 'NOVEDADES' && (
+              <div className="animate-fadeIn flex flex-col w-full">
+                <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg">
+                  <div className="p-space-lg border-b border-surface-container flex items-center justify-between">
+                    <div>
+                      <h2 className="font-headline-sm font-bold text-on-surface flex items-center gap-2">
+                        <span className="material-symbols-outlined text-error">report</span>
+                        Tickets de Novedad (Mantenimiento / Soporte)
+                      </h2>
+                      <p className="text-body-sm text-outline mt-1">Registros reportados por los empleados sobre fallas o requerimientos en sus equipos.</p>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto w-full">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-surface-container-low text-outline font-label-sm uppercase tracking-wider">
+                          <th className="py-space-md px-space-md font-bold">Fecha / ID</th>
+                          <th className="py-space-md px-space-md font-bold">Reportado Por</th>
+                          <th className="py-space-md px-space-md font-bold">Equipo / Placa</th>
+                          <th className="py-space-md px-space-md font-bold">Tipo de Novedad</th>
+                          <th className="py-space-md px-space-lg font-bold">Descripción</th>
+                          <th className="py-space-md px-space-md font-bold text-right">Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-surface-container font-body-sm text-on-surface">
+                        {novedadesTI.length === 0 ? (
+                          <tr>
+                            <td colSpan="6" className="text-center py-16">
+                              <div className="flex flex-col items-center justify-center gap-3">
+                                <span className="material-symbols-outlined text-[48px] text-outline">check_circle</span>
+                                <p className="font-bold text-label-lg text-on-surface">No hay novedades pendientes</p>
+                                <p className="text-outline text-body-sm">Todo el equipamiento está operando con normalidad.</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          novedadesTI.map(nov => (
+                            <tr key={nov.id} className="hover:bg-surface-container-lowest transition-colors">
+                              <td className="py-space-md px-space-md">
+                                <div className="flex flex-col">
+                                  <span className="font-code-mono text-primary font-bold">{nov.id.substring(0,6).toUpperCase()}</span>
+                                  <span className="text-[11px] text-outline">
+                                    {nov.fecha_reporte?.toDate ? nov.fecha_reporte.toDate().toLocaleString() : 'Reciente'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-space-md px-space-md">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold">{nov.reportado_por_nombre}</span>
+                                  <span className="text-[11px] text-outline">{nov.reportado_por}</span>
+                                </div>
+                              </td>
+                              <td className="py-space-md px-space-md">
+                                <div className="flex items-center gap-2">
+                                  <span className="material-symbols-outlined text-[16px] text-primary">desktop_windows</span>
+                                  <div className="flex flex-col">
+                                    <span className="font-code-mono font-bold text-on-surface-variant">{nov.placa}</span>
+                                    <span className="text-[11px] text-outline truncate max-w-[120px]">{nov.equipo_nombre}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-space-md px-space-md">
+                                <span className="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full font-label-sm text-label-sm font-bold bg-error-container text-error">
+                                  {nov.tipo}
+                                </span>
+                              </td>
+                              <td className="py-space-md px-space-lg">
+                                <p className="text-body-sm text-on-surface-variant break-words max-w-sm whitespace-pre-wrap">
+                                  {nov.descripcion}
+                                </p>
+                              </td>
+                              <td className="py-space-md px-space-md text-right">
+                                <span className="font-label-sm text-outline uppercase font-bold">{nov.estado || 'PENDIENTE TI'}</span>
+                                {nov.estado !== 'RESUELTO' && nov.estado !== 'DADO DE BAJA' && (
+                                  <div className="flex flex-col gap-1 mt-2 items-end">
+                                    <button 
+                                      onClick={() => handleManageNovedad(nov, 'MANTENIMIENTO')}
+                                      className="px-2 py-1 bg-error-container text-error rounded text-[11px] font-bold hover:bg-error hover:text-on-error transition-colors"
+                                    >
+                                      A Taller (Mantenimiento)
+                                    </button>
+                                    <button 
+                                      onClick={() => handleManageNovedad(nov, 'DADO DE BAJA')}
+                                      className="px-2 py-1 bg-surface-container-highest text-on-surface rounded text-[11px] font-bold hover:bg-on-surface hover:text-surface transition-colors"
+                                    >
+                                      Dar de Baja
+                                    </button>
+                                    <button 
+                                      onClick={() => handleManageNovedad(nov, 'RESUELTO')}
+                                      className="px-2 py-1 bg-primary-container text-primary rounded text-[11px] font-bold hover:bg-primary hover:text-on-primary transition-colors"
+                                    >
+                                      Marcar Resuelto
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* BARRA OPERACIONAL INFERIOR */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md mb-space-sm">
@@ -1292,20 +1588,62 @@ export default function Inventario() {
                     </li>
                   </ul>
                 </div>
+                
+                {assetHistory.length > 0 && (
+                  <div className="space-y-space-xs pt-space-xs">
+                    <label className="font-label-sm text-label-sm text-outline uppercase font-bold">Hoja de Vida Operativa (Historial Ticket)</label>
+                    <div className="space-y-2 mt-2">
+                      {assetHistory.map(hist => (
+                        <div key={hist.id} className="p-3 bg-surface-container-low rounded-lg flex flex-col gap-1 border border-surface-container">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-label-sm text-on-surface">{hist.tipo}</span>
+                            <span className={`font-label-sm font-bold px-2 py-0.5 rounded text-[10px] uppercase ${hist.estado === 'RESUELTO' ? 'bg-primary-container text-primary' : hist.estado === 'DADO DE BAJA' ? 'bg-surface-container-highest text-outline' : 'bg-error-container text-error'}`}>
+                              {hist.estado}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-outline font-code-mono">
+                            Reportado: {hist.fecha_reporte?.toDate ? hist.fecha_reporte.toDate().toLocaleDateString() : 'Reciente'} por {hist.reportado_por_nombre}
+                          </span>
+                          <p className="text-body-sm text-on-surface-variant break-words mt-1">{hist.descripcion}</p>
+                          {hist.comentario_cierre && (
+                            <div className="mt-2 p-2 bg-surface-container rounded-md border-l-2 border-primary">
+                              <span className="block text-[10px] font-bold text-outline uppercase">Resolución TI</span>
+                              <p className="text-body-sm text-on-surface mt-0.5">{hist.comentario_cierre}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="pt-space-lg flex items-center gap-space-md border-t border-surface-container mt-4">
-              <button
-                onClick={() => {
-                  setAssetToEdit(selectedAssetForDetail);
-                  setSelectedAssetForDetail(null);
-                }}
-                className="w-full h-10 bg-primary text-on-primary rounded-lg font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">edit</span>
-                Editar este Activo
-              </button>
+              {currentUser?.rol !== 'Empleado' ? (
+                <button
+                  onClick={() => {
+                    setAssetToEdit(selectedAssetForDetail);
+                    setSelectedAssetForDetail(null);
+                  }}
+                  className="w-full h-10 bg-primary text-on-primary rounded-lg font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                  Editar este Activo
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setNovedadEquipoDestino(selectedAssetForDetail);
+                    setSelectedAssetForDetail(null);
+                    setShowNovedadModal(true);
+                  }}
+                  className="w-full h-10 bg-error-container text-error rounded-lg font-label-md text-label-md font-semibold hover:bg-error/20 transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">report</span>
+                  Reportar Novedad
+                </button>
+              )}
               <button
                 onClick={() => exportToCSV([selectedAssetForDetail], `acta_${selectedAssetForDetail.placa}.csv`)}
                 className="w-12 h-10 bg-surface-container rounded-lg flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer"
@@ -1314,6 +1652,97 @@ export default function Inventario() {
                 <span className="material-symbols-outlined text-[20px]">print</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PARA REPORTAR NOVEDAD (Empleado) */}
+      {showNovedadModal && novedadEquipoDestino && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div
+            onClick={() => {
+              setShowNovedadModal(false);
+              setNovedadEquipoDestino(null);
+            }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+          ></div>
+          <div className="relative w-full max-w-md bg-surface-container-lowest rounded-2xl shadow-2xl p-6 z-10 overflow-hidden">
+            <div className="flex items-center justify-between pb-4 border-b border-surface-container mb-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-error text-[24px]">report_problem</span>
+                <h2 className="font-headline-sm font-bold text-on-surface">Reportar Novedad TI</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowNovedadModal(false);
+                  setNovedadEquipoDestino(null);
+                }}
+                className="p-1 rounded-lg hover:bg-surface-container text-outline hover:text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="bg-surface-container-low p-3 rounded-lg mb-4 text-body-sm font-semibold text-on-surface-variant flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[18px]">devices</span>
+              Equipo: {novedadEquipoDestino.placa} - {novedadEquipoDestino.equipo_nombre}
+            </div>
+
+            <form onSubmit={handleReportNovedad} className="space-y-4">
+              <div>
+                <label className="block text-label-sm font-bold text-outline uppercase mb-1">Tipo de Novedad</label>
+                <select
+                  required
+                  className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  value={nuevaNovedad.tipo}
+                  onChange={(e) => setNuevaNovedad({ ...nuevaNovedad, tipo: e.target.value })}
+                >
+                  <option value="Mantenimiento Correctivo">Mantenimiento Correctivo (Falla)</option>
+                  <option value="Requerimiento de Software">Requerimiento de Software</option>
+                  <option value="Robo o Pérdida">Robo o Pérdida</option>
+                  <option value="Daño Accidental">Daño Accidental</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-label-sm font-bold text-outline uppercase mb-1">Descripción del Incidente / Requerimiento</label>
+                <textarea
+                  required
+                  minLength={10}
+                  rows={4}
+                  placeholder="Detalla lo que sucedió con el equipo para que soporte técnico pueda evaluarlo..."
+                  className="w-full p-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  value={nuevaNovedad.descripcion}
+                  onChange={(e) => setNuevaNovedad({ ...nuevaNovedad, descripcion: e.target.value })}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-surface-container">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNovedadModal(false);
+                    setNovedadEquipoDestino(null);
+                  }}
+                  className="flex-1 h-10 bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="flex-1 h-10 bg-error hover:bg-error/90 text-on-error font-label-md rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-[18px]">send</span>
+                  )}
+                  Enviar Reporte
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
