@@ -7,7 +7,9 @@ import {
   doc, 
   updateDoc, 
   addDoc, 
-  serverTimestamp 
+  serverTimestamp,
+  where,
+  arrayUnion
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
@@ -96,7 +98,11 @@ export default function Devoluciones() {
 
   // Cargar Equipos desde Firestore
   useEffect(() => {
-    const qEquipos = query(collection(db, "equipos"));
+    if (storedSession?.rol === 'Empleado') {
+      navigate('/inventario', { replace: true });
+      return;
+    }
+    let qEquipos = query(collection(db, "equipos"));
     const unsub = onSnapshot(qEquipos, (snapshot) => {
       const list = [];
       snapshot.forEach(docSnap => {
@@ -446,7 +452,13 @@ export default function Devoluciones() {
         ubicacion: nuevaUbicacion,
         ultimo_movimiento: `Reintegro Acta ${actaNumero} (${colaboradorAsignado.nombre})`,
         ultima_devolucion_acta: actaNumero,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        historial_movimientos: arrayUnion({
+          fecha: new Date().toISOString(),
+          tipo: 'DEVOLUCIÓN',
+          descripcion: `Reintegro por: ${motivoDevolucion} • Estado físico: ${condicionFisica}`,
+          responsable: receivingTIUser.nombre || 'Administrador TI'
+        })
       });
 
       const savedPayload = {
@@ -555,20 +567,24 @@ export default function Devoluciones() {
                 <span className="material-symbols-outlined text-[16px] text-outline">expand_more</span>
               </div>
               <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs border-l-2 border-primary/20">
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" 
-                  onClick={() => navigate('/entrega-hardware')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">post_add</span>
-                  <span className="font-body-sm text-body-sm">Nueva Entrega (RF-04)</span>
-                </a>
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs transition-colors bg-primary-container text-on-primary font-headline-sm rounded-lg cursor-pointer"
-                  onClick={() => {}}
-                >
-                  <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                  <span className="font-body-sm text-body-sm font-bold">Devoluciones (Reintegro)</span>
-                </a>
+                {storedSession?.rol !== 'Empleado' && (
+                  <a 
+                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" 
+                    onClick={() => navigate('/entrega-hardware')}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">post_add</span>
+                    <span className="font-body-sm text-body-sm">Nueva Entrega (RF-04)</span>
+                  </a>
+                )}
+                {storedSession?.rol !== 'Empleado' && (
+                  <a 
+                    className="flex items-center gap-space-sm px-space-md py-space-xs transition-colors bg-primary-container text-on-primary font-headline-sm rounded-lg cursor-pointer"
+                    onClick={() => {}}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
+                    <span className="font-body-sm text-body-sm font-bold">Devoluciones (Reintegro)</span>
+                  </a>
+                )}
                 <a 
                   className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
                   onClick={() => navigate('/historial')}
@@ -579,18 +595,17 @@ export default function Devoluciones() {
               </div>
             </div>
 
-            <a 
-              className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/usuarios-roles')}
-            >
-              <div className="flex items-center gap-space-md">
-                <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
-                <span className="font-body-md text-body-md">Usuarios y Roles</span>
-              </div>
-              <span className="font-code-mono text-code-mono bg-secondary/15 text-secondary font-bold px-space-sm py-0.5 rounded-full text-xs">
-                {usuariosDisponibles.length}
-              </span>
-            </a>
+            {storedSession?.rol !== 'Empleado' && (
+              <a 
+                className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                onClick={() => navigate('/usuarios-roles')}
+              >
+                <div className="flex items-center gap-space-md">
+                  <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
+                  <span className="font-body-md text-body-md">Usuarios y Roles</span>
+                </div>
+              </a>
+            )}
           </nav>
         </div>
 
@@ -650,16 +665,16 @@ export default function Devoluciones() {
             <div className="flex items-center gap-space-md pl-space-xs">
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="font-label-md text-label-md text-on-surface font-bold">
-                  {storedSession?.nombre || 'Funcionario SGI'}
+                  {receivingTIUser.nombre}
                 </span>
                 <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                  {storedSession?.cargo || storedSession?.rol || 'Administrador TI'}
+                  {receivingTIUser.cargo || receivingTIUser.rol || 'Receptor TI'}
                 </span>
               </div>
               <img 
                 alt="Foto Perfil" 
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" 
-                src={storedSession?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
+                src={receivingTIUser.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
               />
               <button 
                 onClick={handleLogout} 

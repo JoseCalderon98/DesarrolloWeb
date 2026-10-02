@@ -7,9 +7,9 @@ import {
   updateDoc,
   deleteDoc,
   writeBatch,
-  serverTimestamp,
   where,
-  addDoc
+  addDoc,
+  arrayUnion
 } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
@@ -375,7 +375,13 @@ export default function Inventario() {
       
       await updateDoc(equipoRef, {
         estado: nuevoEstadoEquipo,
-        ultimo_movimiento: `Novedad TI: Caso establecido como ${accion}${comentario ? ` - ${comentario}` : ''}`
+        ultimo_movimiento: `Novedad TI: Caso establecido como ${accion}${comentario ? ` - ${comentario}` : ''}`,
+        historial_movimientos: arrayUnion({
+          fecha: new Date().toISOString(),
+          tipo: `NOVEDAD - ${accion}`,
+          descripcion: comentario || `Cambio de estado por Novedad TI: ${accion}`,
+          responsable: currentUser.nombre || 'Administrador TI'
+        })
       });
 
       setSuccessMsg(`Caso de novedad establecido como ${accion}.`);
@@ -1616,6 +1622,34 @@ export default function Inventario() {
                     </div>
                   </div>
                 )}
+
+                <div className="space-y-space-xs pt-space-xs">
+                  <label className="font-label-sm text-label-sm text-outline uppercase font-bold flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px]">history</span>
+                    Historial de Custodia (Bitácora)
+                  </label>
+                  {!selectedAssetForDetail.historial_movimientos?.length ? (
+                    <div className="text-body-sm px-3 py-4 bg-surface-container-low rounded-lg text-outline italic">No hay registros de movimientos en la bitácora.</div>
+                  ) : (
+                    <div className="space-y-2 mt-2">
+                      {[...selectedAssetForDetail.historial_movimientos].reverse().map((mov, idx) => (
+                        <div key={idx} className="p-3 bg-surface-container-lowest rounded-lg flex flex-col gap-1 border border-surface-container hover:border-primary/50 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-label-sm text-on-surface flex items-center gap-1">
+                              <div className={`w-2 h-2 rounded-full ${mov.tipo.includes('DEVOLUCIÓN') ? 'bg-error' : mov.tipo.includes('ASIGNACIÓN') ? 'bg-primary' : 'bg-secondary'}`}></div>
+                              {mov.tipo}
+                            </span>
+                            <span className="text-[11px] text-outline font-code-mono">
+                              {new Date(mov.fecha).toLocaleString('es-CO')}
+                            </span>
+                          </div>
+                          <p className="text-body-sm text-on-surface-variant leading-tight">{mov.descripcion}</p>
+                          <span className="text-[10px] text-outline font-bold uppercase mt-1">Soporte/Responsable TI: <span className="text-primary">{mov.responsable}</span></span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

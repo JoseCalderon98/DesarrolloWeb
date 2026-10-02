@@ -23,34 +23,38 @@ export default function Login() {
     
     try {
       let profileUser = null;
-      const cleanUsername = username.trim();
 
-      // Optimizacion: Intentar inicio con Firebase Auth y buscar perfil Firestore concurrentemente
-      const ppiMatch = initialPPIMembers.find(m => m.email.toLowerCase() === cleanUsername.toLowerCase());
-      
-      const authPromise = signInWithEmailAndPassword(auth, cleanUsername, password);
-      
-      const q = query(collection(db, "usuarios"), where("email", "==", cleanUsername));
-      const dbPromise = getDocs(q).catch(dbErr => {
+      // 1. Intentar inicio con Firebase Auth
+      try {
+        await signInWithEmailAndPassword(auth, username.trim(), password);
+      } catch (authError) {
+        // Si el usuario es uno de los integrantes del PPI o demo
+        const ppiMatch = initialPPIMembers.find(m => m.email.toLowerCase() === username.trim().toLowerCase());
+        if (!ppiMatch) {
+          throw authError;
+        }
+      }
+
+      // 2. Buscar perfil completo en Firestore colección 'usuarios'
+      try {
+        const q = query(collection(db, "usuarios"), where("email", "==", username.trim()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          profileUser = { id: snap.docs[0].id, ...snap.docs[0].data() };
+        }
+      } catch (dbErr) {
         console.warn("Could not query firestore user:", dbErr);
-        return null;
-      });
-
-      const [, snap] = await Promise.all([authPromise, dbPromise]);
-      
-      if (snap && !snap.empty) {
-        profileUser = { id: snap.docs[0].id, ...snap.docs[0].data() };
       }
 
       // 3. Fallback a integrantes PPI si aún no se ha sembrado la BD
       if (!profileUser) {
-        const ppiUser = initialPPIMembers.find(m => m.email.toLowerCase() === cleanUsername.toLowerCase());
+        const ppiUser = initialPPIMembers.find(m => m.email.toLowerCase() === username.trim().toLowerCase());
         if (ppiUser) {
           profileUser = ppiUser;
         } else {
           profileUser = {
-            nombre: cleanUsername.split('@')[0],
-            email: cleanUsername,
+            nombre: username.split('@')[0],
+            email: username,
             rol: role === 'admin' ? 'Administrador' : 'Soporte TI',
             cargo: role === 'admin' ? 'Ingeniero Administrador TI' : 'Técnico de Soporte',
             area: 'Tecnología e Infraestructura',
@@ -78,19 +82,19 @@ export default function Login() {
   const fillDemo = (demoKey) => {
     if (demoKey === 'alexis') {
       setUsername('alexis.cruz@casalimpia.com.co');
-      setPassword('hospi123');
+      setPassword('AdminCasalimpia2026*');
       setRole('admin');
     } else if (demoKey === 'alejandro') {
       setUsername('alejandro.calderon@casalimpia.com.co');
-      setPassword('hospi123');
+      setPassword('AdminCasalimpia2026*');
       setRole('admin');
     } else if (demoKey === 'santiago') {
       setUsername('santiago.jimenez@casalimpia.com.co');
-      setPassword('hospi123');
+      setPassword('TechSoporte2026!');
       setRole('soporte');
     } else if (demoKey === 'juan') {
       setUsername('juan.gutierrez@casalimpia.com.co');
-      setPassword('hospi123');
+      setPassword('Empleado2026*');
       setRole('soporte');
     }
   };

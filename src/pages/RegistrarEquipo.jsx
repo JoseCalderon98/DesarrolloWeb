@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -7,7 +7,6 @@ import { db } from '../firebase';
 import { getStoredUser } from '../utils/userHelpers';
 
 export default function RegistrarEquipo() {
-  const storedSession = getStoredUser();
   const navigate = useNavigate();
   const handleLogout = async () => {
     try {
@@ -17,6 +16,13 @@ export default function RegistrarEquipo() {
       console.error("Error signing out:", error);
     }
   };
+
+  useEffect(() => {
+    const user = getStoredUser();
+    if (user?.rol === 'Empleado') {
+      navigate('/inventario', { replace: true });
+    }
+  }, [navigate]);
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -86,32 +92,6 @@ export default function RegistrarEquipo() {
             <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0">
               <span className="material-symbols-outlined text-[16px] text-secondary">location_on</span>
               <span className="font-label-sm text-label-sm font-semibold truncate">Sede Principal Av. El Dorado #100-80, Bogotá</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-space-md shrink-0">
-            <div className="h-6 w-px bg-surface-container-highest"></div>
-            <div className="flex items-center gap-space-md pl-space-xs">
-              <div className="flex flex-col text-right hidden sm:flex">
-                <span className="font-label-md text-label-md text-on-surface font-bold">
-                  {storedSession?.nombre || 'Funcionario SGI'}
-                </span>
-                <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                  {storedSession?.cargo || storedSession?.rol || 'Administrador TI'}
-                </span>
-              </div>
-              <img 
-                alt="Foto Perfil" 
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" 
-                src={storedSession?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
-              />
-              <button 
-                onClick={handleLogout} 
-                className="hover:bg-error-container hover:text-error text-outline p-1.5 rounded-full transition-colors cursor-pointer" 
-                title="Cerrar Sesión"
-              >
-                <span className="material-symbols-outlined text-[20px]">logout</span>
-              </button>
             </div>
           </div>
         </header>

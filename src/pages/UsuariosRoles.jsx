@@ -58,6 +58,10 @@ export default function UsuariosRoles() {
 
   // 1. Suscripción en tiempo real a la colección 'usuarios'
   useEffect(() => {
+    if (currentUser?.rol === 'Empleado') {
+      navigate('/inventario', { replace: true });
+      return;
+    }
     const q = query(collection(db, "usuarios"));
     const unsub = onSnapshot(q, (snapshot) => {
       const list = [];
@@ -266,13 +270,15 @@ export default function UsuariosRoles() {
                   <span className="material-symbols-outlined text-[16px]">post_add</span>
                   <span className="font-body-sm text-body-sm">Nueva Entrega / Acta</span>
                 </a>
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/devoluciones')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                  <span className="font-body-sm text-body-sm">Devoluciones (Reintegro)</span>
-                </a>
+                {currentUser?.rol !== 'Empleado' && (
+                  <a 
+                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                    onClick={() => navigate('/devoluciones')}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
+                    <span className="font-body-sm text-body-sm">Devoluciones (Reintegro)</span>
+                  </a>
+                )}
                 <a 
                   className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
                   onClick={() => navigate('/historial')}

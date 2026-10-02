@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { getStoredUser } from '../utils/userHelpers';
@@ -39,28 +39,44 @@ export default function Historial() {
   // ----------------------------------------------------
   useEffect(() => {
     // 1. Actas de Entrega
-    const unsubEntrega = onSnapshot(query(collection(db, "actas_entrega")), (snapshot) => {
+    let qEntrega = query(collection(db, "actas_entrega"));
+    if (currentUser?.rol === 'Empleado') {
+      qEntrega = query(collection(db, "actas_entrega"), where("colaborador.email", "==", currentUser.email));
+    }
+    const unsubEntrega = onSnapshot(qEntrega, (snapshot) => {
       const list = [];
       snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
       setActasEntrega(list);
     });
 
     // 2. Actas de Devolución
-    const unsubDevolucion = onSnapshot(query(collection(db, "actas_devolucion")), (snapshot) => {
+    let qDevolucion = query(collection(db, "actas_devolucion"));
+    if (currentUser?.rol === 'Empleado') {
+      qDevolucion = query(collection(db, "actas_devolucion"), where("entregado_por_colaborador.email", "==", currentUser.email));
+    }
+    const unsubDevolucion = onSnapshot(qDevolucion, (snapshot) => {
       const list = [];
       snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
       setActasDevolucion(list);
     });
 
     // 3. Movimientos Generales
-    const unsubMovimientos = onSnapshot(query(collection(db, "movimientos")), (snapshot) => {
+    let qMov = query(collection(db, "movimientos"));
+    if (currentUser?.rol === 'Empleado') {
+      qMov = query(collection(db, "movimientos"), where("rawDoc.colaborador.email", "==", currentUser.email));
+    }
+    const unsubMovimientos = onSnapshot(qMov, (snapshot) => {
       const list = [];
       snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
       setMovimientosGenerales(list);
     });
 
     // 4. Equipos (para complementar altas del sistema)
-    const unsubEquipos = onSnapshot(query(collection(db, "equipos")), (snapshot) => {
+    let qEquipos = query(collection(db, "equipos"));
+    if (currentUser?.rol === 'Empleado') {
+      qEquipos = query(collection(db, "equipos"), where("asignatario_email", "==", currentUser.email));
+    }
+    const unsubEquipos = onSnapshot(qEquipos, (snapshot) => {
       const list = [];
       snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
       setEquipos(list);
@@ -310,20 +326,24 @@ export default function Historial() {
                 <span className="material-symbols-outlined text-[16px] text-outline">expand_more</span>
               </div>
               <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs border-l-2 border-primary/20">
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" 
-                  onClick={() => navigate('/entrega-hardware')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">post_add</span>
-                  <span className="font-body-sm text-body-sm">Nueva Entrega (RF-04)</span>
-                </a>
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/devoluciones')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                  <span className="font-body-sm text-body-sm">Devoluciones (Reintegro)</span>
-                </a>
+                {currentUser?.rol !== 'Empleado' && (
+                  <a 
+                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" 
+                    onClick={() => navigate('/entrega-hardware')}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">post_add</span>
+                    <span className="font-body-sm text-body-sm">Nueva Entrega (RF-04)</span>
+                  </a>
+                )}
+                {currentUser?.rol !== 'Empleado' && (
+                  <a 
+                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                    onClick={() => navigate('/devoluciones')}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
+                    <span className="font-body-sm text-body-sm">Devoluciones (Reintegro)</span>
+                  </a>
+                )}
                 <a 
                   className="flex items-center gap-space-sm px-space-md py-space-xs transition-colors bg-primary-container text-on-primary font-headline-sm rounded-lg cursor-pointer"
                   onClick={() => {}}
@@ -334,15 +354,17 @@ export default function Historial() {
               </div>
             </div>
 
-            <a 
-              className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/usuarios-roles')}
-            >
-              <div className="flex items-center gap-space-md">
-                <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
-                <span className="font-body-md text-body-md">Usuarios y Roles</span>
-              </div>
-            </a>
+            {currentUser?.rol !== 'Empleado' && (
+              <a 
+                className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
+                onClick={() => navigate('/usuarios-roles')}
+              >
+                <div className="flex items-center gap-space-md">
+                  <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
+                  <span className="font-body-md text-body-md">Usuarios y Roles</span>
+                </div>
+              </a>
+            )}
           </nav>
         </div>
 
@@ -444,13 +466,15 @@ export default function Historial() {
               </div>
 
               <div className="flex items-center gap-space-sm shrink-0">
-                <button 
-                  onClick={() => navigate('/entrega-hardware')}
-                  className="px-space-md py-2 bg-primary text-on-primary rounded-lg font-label-sm text-label-sm font-bold flex items-center gap-1.5 hover:bg-primary-container transition-all shadow-sm cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[18px]">post_add</span>
-                  Nueva Entrega
-                </button>
+                {currentUser?.rol !== 'Empleado' && (
+                  <button 
+                    onClick={() => navigate('/entrega-hardware')}
+                    className="px-space-md py-2 bg-primary text-on-primary rounded-lg font-label-sm text-label-sm font-bold flex items-center gap-1.5 hover:bg-primary-container transition-all shadow-sm cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">post_add</span>
+                    Nueva Entrega
+                  </button>
+                )}
                 <button 
                   onClick={() => navigate('/devoluciones')}
                   className="px-space-md py-2 bg-secondary text-on-secondary rounded-lg font-label-sm text-label-sm font-bold flex items-center gap-1.5 hover:opacity-95 transition-all shadow-sm cursor-pointer"

@@ -9,7 +9,8 @@ import {
   addDoc, 
   writeBatch,
   serverTimestamp,
-  orderBy
+  orderBy,
+  arrayUnion
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
@@ -17,6 +18,7 @@ import { getStoredUser } from '../utils/userHelpers';
 import { initialDemoAssets } from '../utils/assetHelpers';
 import { generateAndPrintActa } from '../utils/actaPrintService';
 
+const normalizeText = (text) => text ? String(text).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
 export default function RegistroEntrega() {
   const navigate = useNavigate();
   const storedSession = getStoredUser();
@@ -41,6 +43,9 @@ export default function RegistroEntrega() {
   // 3. Selección de Hardware desde Firestore
   const [selectedEquipoId, setSelectedEquipoId] = useState('');
   const [verSoloDisponibles, setVerSoloDisponibles] = useState(true);
+  const [equipoSearch, setEquipoSearch] = useState('');
+  const [showColaboradorDocs, setShowColaboradorDocs] = useState(false);
+  const [showEquipoDocs, setShowEquipoDocs] = useState(false);
 
   // 4. Parámetros del Acta TI-FO-04
   const [actaNumero, setActaNumero] = useState(
@@ -80,6 +85,10 @@ export default function RegistroEntrega() {
   // 8. Modal de Historial de Actas Legalizadas
   const [showHistorialModal, setShowHistorialModal] = useState(false);
   const [actaEnDetalle, setActaEnDetalle] = useState(null);
+  
+  const [showActaModal, setShowActaModal] = useState(false);
+
+
 
   // 9. Canvas de Firma Digital
   const canvasRef = useRef(null);
@@ -101,6 +110,10 @@ export default function RegistroEntrega() {
 
   // A. Suscripción a Usuarios registrados en Firestore
   useEffect(() => {
+    if (storedSession?.rol === 'Empleado') {
+      navigate('/inventario', { replace: true });
+      return;
+    }
     const qUsers = query(collection(db, "usuarios"));
     const unsubUsers = onSnapshot(qUsers, (snapshot) => {
       const list = [];
@@ -111,11 +124,7 @@ export default function RegistroEntrega() {
       setLoadingUsuarios(false);
 
       if (list.length > 0) {
-        // Seleccionar por defecto un colaborador receptor (preferencia Empleado o primer usuario)
-        if (!selectedColaboradorId || !list.some(u => u.id === selectedColaboradorId)) {
-          const defaultReceptor = list.find(u => u.rol === 'Empleado') || list[0];
-          setSelectedColaboradorId(defaultReceptor.id);
-        }
+        // Seleccionar por defecto el colaborador receptor removido a petición del usuario.
 
         // Seleccionar por defecto el funcionario TI que entrega (preferencia sesión o Administrador / Soporte)
         if (!selectedDelivererId || !list.some(u => u.id === selectedDelivererId)) {
@@ -143,16 +152,7 @@ export default function RegistroEntrega() {
       setEquipos(list);
       setLoadingEquipos(false);
 
-      if (list.length > 0) {
-        const disponibles = list.filter(e => e.estado === 'DISPONIBLE' || !e.estado);
-        if (disponibles.length > 0) {
-          if (!selectedEquipoId || !disponibles.some(e => e.id === selectedEquipoId)) {
-            setSelectedEquipoId(disponibles[0].id);
-          }
-        } else if (!selectedEquipoId || !list.some(e => e.id === selectedEquipoId)) {
-          setSelectedEquipoId(list[0].id);
-        }
-      }
+      // Filtros opcionales si se desean guardar en memoria, pero no pre-seleccionamos ninguno.
     }, (err) => {
       console.error("Error Firestore Equipos:", err);
       setLoadingEquipos(false);
@@ -225,6 +225,19 @@ export default function RegistroEntrega() {
   );
   const deliverersOptions = funcionariosTI.length > 0 ? funcionariosTI : usuariosDisponibles;
 
+  const filteredUsers = colaboradorSearch.trim() === '' ? [] : usuariosDisponibles.filter(u => {
+    const term = normalizeText(colaboradorSearch);
+    return normalizeText(u.nombre).includes(term) ||
+           (u.cedula && normalizeText(u.cedula).includes(term)) ||
+           (u.email && normalizeText(u.email).includes(term));
+  });
+
+  const filteredEquipos = equipoSearch.trim() === '' ? [] : equiposVisibles.filter(eq => {
+    const term = normalizeText(equipoSearch);
+    return normalizeText(eq.equipo_nombre).includes(term) ||
+           (eq.placa && normalizeText(eq.placa).includes(term)) ||
+           (eq.serial && normalizeText(eq.serial).includes(term));
+  });
   // Búsqueda interactiva de colaborador por nombre, cédula o correo
   const handleSearchColaborador = () => {
     if (!colaboradorSearch.trim()) return;
@@ -512,7 +525,13 @@ export default function RegistroEntrega() {
         ultimo_movimiento: `Acta ${actaNumero} entregada a ${colaborador.nombre}`,
         acta_id: actaDocRef.id,
         acta_numero: actaNumero,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        historial_movimientos: arrayUnion({
+          fecha: new Date().toISOString(),
+          tipo: 'ASIGNACIÓN',
+          descripcion: `Equipo asignado a ${colaborador.nombre} (C.C. ${colaborador.cedula || 'N/A'}) - Acta ${actaNumero}`,
+          responsable: deliverer.nombre || 'Administrador TI'
+        })
       });
 
       const savedPayload = {
@@ -710,16 +729,16 @@ export default function RegistroEntrega() {
             <div className="flex items-center gap-space-md pl-space-xs">
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="font-label-md text-label-md text-on-surface font-bold">
-                  {storedSession?.nombre || 'Funcionario SGI'}
+                  {deliverer.nombre}
                 </span>
                 <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                  {storedSession?.cargo || storedSession?.rol || 'Administrador TI'}
+                  {deliverer.cargo || deliverer.rol || 'Administrador TI'}
                 </span>
               </div>
               <img 
                 alt="Foto Perfil" 
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" 
-                src={storedSession?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
+                src={deliverer.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
               />
               <button 
                 onClick={handleLogout} 
@@ -813,20 +832,20 @@ export default function RegistroEntrega() {
               </div>
             </div>
 
-            {/* Layout en Dos Columnas: Formulario (7 cols) y Vista Previa Acta (5 cols) */}
+            {/* Formulario (12 cols) dejando Acta en Modal */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
               
               {/* ======================================================== */}
               {/* COLUMNA IZQUIERDA: FORMULARIO DINÁMICO DESDE FIRESTORE    */}
               {/* ======================================================== */}
-              <div className="xl:col-span-7 flex flex-col gap-space-lg">
+              <div className="xl:col-span-12 flex flex-col gap-space-lg">
                 
                 {/* BLOQUE A: Colaborador Receptor (Desde Colección 'usuarios') */}
                 <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container-high/30">
                   <div className="flex items-center justify-between pb-space-sm mb-space-md bg-surface-container-low px-space-md py-space-xs rounded-lg">
                     <div className="flex items-center gap-space-sm">
                       <span className="material-symbols-outlined text-primary text-[20px]">badge</span>
-                      <span className="font-headline-sm text-body-lg text-primary font-bold">Bloque A: Colaborador Receptor (Base de Datos)</span>
+                      <span className="font-headline-sm text-body-lg text-primary font-bold">Bloque A: Seleccionar Colaborador Receptor</span>
                     </div>
                     <span className="font-label-sm text-label-sm bg-secondary text-on-secondary px-space-sm py-0.5 rounded-full font-bold">
                       {usuariosDisponibles.length} Registrados en Firestore
@@ -835,74 +854,62 @@ export default function RegistroEntrega() {
 
                   <div className="flex flex-col gap-space-md">
                     
-                    {/* Selector Directo de Usuarios de Firestore */}
-                    <div className="flex flex-col gap-space-xs">
-                      <div className="flex items-center justify-between">
-                        <label className="font-label-md text-label-md text-on-surface font-semibold">
-                          Seleccionar Colaborador Receptor:
-                        </label>
-                        <button 
-                          onClick={() => navigate('/usuarios-roles')} 
-                          className="text-primary hover:underline font-label-sm text-label-sm flex items-center gap-0.5 cursor-pointer"
-                          type="button"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">person_add</span>
-                          Gestionar Usuarios
-                        </button>
-                      </div>
-
-                      <div className="relative">
-                        <select 
-                          className="w-full h-11 px-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary appearance-none cursor-pointer pr-10 shadow-xs"
-                          value={selectedColaboradorId}
-                          onChange={(e) => setSelectedColaboradorId(e.target.value)}
-                        >
-                          {usuariosDisponibles.length === 0 ? (
-                            <option value="">No hay usuarios en la colección 'usuarios'. Registre usuarios en el módulo de Roles.</option>
-                          ) : (
-                            usuariosDisponibles.map(u => (
-                              <option key={u.id} value={u.id}>
-                                {u.nombre} • C.C. {u.cedula} • {u.cargo || u.rol} ({u.sede || 'Sede Principal'})
-                              </option>
-                            ))
-                          )}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-space-md top-1/2 -translate-y-1/2 pointer-events-none text-outline">
-                          expand_more
-                        </span>
-                      </div>
-                    </div>
-
                     {/* Búsqueda Rápida por Cédula o Nombre */}
                     <div className="flex flex-col gap-space-xs">
-                      <label className="font-label-sm text-label-sm text-outline">
-                        O filtrar en tiempo real por Cédula, Nombre o Correo:
+                      <div className="flex flex-col gap-space-xs mb-space-sm bg-primary/10 p-space-sm rounded-lg border border-primary/20">
+                          <span className="font-label-sm text-label-sm text-primary font-bold">Instrucción:</span>
+                          <span className="font-body-sm text-body-sm text-on-surface-variant">
+                            Busque el colaborador por su número de documento, nombre o correo corporativo.
+                          </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-space-xs">
+                      <label className="font-label-sm text-label-sm text-outline hidden">
+                        Filtrar por Cédula, Nombre o Correo:
                       </label>
                       <div className="relative w-full">
                         <span className="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">person_search</span>
                         <input 
-                          className="w-full h-10 pl-10 pr-24 bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary shadow-xs" 
+                          className="w-full h-10 pl-10 pr-4 bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary shadow-xs" 
                           placeholder="Escriba documento o nombre..." 
                           type="text" 
                           value={colaboradorSearch}
-                          onChange={(e) => setColaboradorSearch(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSearchColaborador();
+                          onChange={(e) => {
+                            setColaboradorSearch(e.target.value);
+                            setShowColaboradorDocs(true);
                           }}
+                          onFocus={() => setShowColaboradorDocs(true)}
+                          onBlur={() => setTimeout(() => setShowColaboradorDocs(false), 200)}
                         />
-                        <button 
-                          onClick={handleSearchColaborador}
-                          className="absolute right-1.5 top-1.5 bottom-1.5 px-space-md bg-primary text-on-primary rounded-lg font-label-sm text-label-sm hover:bg-primary-container transition-colors flex items-center gap-1 cursor-pointer" 
-                          type="button"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">search</span>
-                          Buscar
-                        </button>
+                        {showColaboradorDocs && filteredUsers.length > 0 && (
+                          <ul className="absolute z-50 w-full mt-1 bg-surface-container-lowest border border-surface-container-highest/40 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                            {filteredUsers.map(u => (
+                              <li 
+                                key={u.id}
+                                className="px-space-md py-space-sm hover:bg-surface-container cursor-pointer flex flex-col border-b border-surface-container-high/20 last:border-0"
+                                onMouseDown={() => {
+                                  setSelectedColaboradorId(u.id);
+                                  setColaboradorSearch(u.nombre);
+                                  setShowColaboradorDocs(false);
+                                }}
+                              >
+                                <span className="font-bold text-on-surface">{u.nombre}</span>
+                                <span className="text-xs text-on-surface-variant">C.C. {u.cedula} • {u.cargo}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {showColaboradorDocs && colaboradorSearch.trim() !== '' && filteredUsers.length === 0 && (
+                          <div className="absolute z-50 w-full mt-1 bg-surface-container-lowest border border-surface-container-highest/40 rounded-lg shadow-xl p-space-md text-center text-sm text-outline">
+                            No se encontraron resultados.
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Ficha Dinámica del Colaborador Seleccionado (Desde el documento de Firestore) */}
-                    <div className="bg-surface-container-low p-space-md rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md border border-surface-container-high/40 shadow-xs">
+                    {selectedColaboradorId && (
+                      <div className="bg-surface-container-low p-space-md rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md border border-surface-container-high/40 shadow-xs">
                       <div className="flex items-center gap-space-md">
                         <img 
                           alt="Foto Colaborador" 
@@ -934,28 +941,20 @@ export default function RegistroEntrega() {
                         <span className="font-body-sm text-body-sm text-on-surface-variant">{colaborador.area || 'Operaciones'}</span>
                       </div>
                     </div>
+                    )}
 
                     {/* Selector de Funcionario TI que realiza la Entrega (Custodio TI) */}
-                    <div className="pt-space-xs border-t border-surface-container-high/40 flex flex-col gap-space-xs">
+                    <div className="pt-space-xs border-t border-surface-container-high/40 flex flex-col gap-space-xs mt-space-md">
                       <label className="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-primary text-[18px]">verified_user</span>
                         Funcionario TI Responsable de la Entrega (Custodio TI):
                       </label>
-                      <div className="relative">
-                        <select 
-                          className="w-full h-10 px-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary appearance-none cursor-pointer pr-10"
-                          value={selectedDelivererId}
-                          onChange={(e) => setSelectedDelivererId(e.target.value)}
-                        >
-                          {deliverersOptions.map(u => (
-                            <option key={u.id} value={u.id}>
-                              {u.nombre} — {u.cargo || u.rol} ({u.sede || 'Sede Principal'})
-                            </option>
-                          ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-space-md top-1/2 -translate-y-1/2 pointer-events-none text-outline">
-                          expand_more
-                        </span>
+                      <div className="flex items-center gap-space-sm p-space-sm bg-surface-container-low rounded-lg border border-surface-container-high/40">
+                        <span className="material-symbols-outlined text-secondary text-[24px]">shield_person</span>
+                        <div className="flex flex-col">
+                          <span className="font-headline-sm text-body-md text-on-surface font-semibold">{deliverer.nombre}</span>
+                          <span className="font-body-sm text-[12px] text-on-surface-variant">{deliverer.cargo || deliverer.rol} • {deliverer.sede || 'Sede Principal'}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -1020,31 +1019,49 @@ export default function RegistroEntrega() {
                         </button>
                       </div>
 
-                      <div className="relative">
-                        <select 
-                          className="w-full h-11 px-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary appearance-none cursor-pointer pr-10 shadow-xs" 
-                          id="assetSelect"
-                          value={selectedEquipoId}
-                          onChange={(e) => setSelectedEquipoId(e.target.value)}
-                        >
-                          {equiposVisibles.length === 0 ? (
-                            <option value="">No hay equipos registrados en Firestore. Utiliza el botón de carga demo.</option>
-                          ) : (
-                            equiposVisibles.map((eq) => (
-                              <option key={eq.id} value={eq.id}>
-                                {eq.equipo_nombre} • Placa: {eq.placa} • SN: {eq.serial} • [{eq.estado || 'DISPONIBLE'}]
-                              </option>
-                            ))
-                          )}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-space-md top-1/2 -translate-y-1/2 pointer-events-none text-outline">
-                          expand_more
-                        </span>
+                      <div className="relative w-full">
+                        <span className="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">laptop_chromebook</span>
+                        <input 
+                          className="w-full h-11 pl-10 pr-4 bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-xs" 
+                          placeholder="Buscar por placa, nombre o serial del equipo..." 
+                          type="text" 
+                          value={equipoSearch}
+                          onChange={(e) => {
+                            setEquipoSearch(e.target.value);
+                            setShowEquipoDocs(true);
+                          }}
+                          onFocus={() => setShowEquipoDocs(true)}
+                          onBlur={() => setTimeout(() => setShowEquipoDocs(false), 200)}
+                        />
+                        {showEquipoDocs && filteredEquipos.length > 0 && (
+                          <ul className="absolute z-[60] w-full mt-1 bg-surface-container-lowest border border-surface-container-highest/40 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                            {filteredEquipos.map(eq => (
+                              <li 
+                                key={eq.id}
+                                className="px-space-md py-space-sm hover:bg-surface-container cursor-pointer flex flex-col border-b border-surface-container-high/20 last:border-0"
+                                onMouseDown={() => {
+                                  setSelectedEquipoId(eq.id);
+                                  setEquipoSearch(`${eq.equipo_nombre} (Placa: ${eq.placa})`);
+                                  setShowEquipoDocs(false);
+                                }}
+                              >
+                                <span className="font-bold text-on-surface">{eq.equipo_nombre} • [{eq.estado || 'DISPONIBLE'}]</span>
+                                <span className="text-xs text-on-surface-variant">PLACA: {eq.placa} • SN: {eq.serial}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {showEquipoDocs && equipoSearch.trim() !== '' && filteredEquipos.length === 0 && (
+                          <div className="absolute z-[60] w-full mt-1 bg-surface-container-lowest border border-surface-container-highest/40 rounded-lg shadow-xl p-space-md text-center text-sm text-outline">
+                            No se encontraron equipos disponibles con ese criterio.
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Ficha de Inspección Detallada del Hardware Seleccionado */}
-                    <div className="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-md border border-surface-container-high/40">
+                    {selectedEquipoId && (
+                      <div className="bg-surface-container-low p-space-md rounded-xl flex flex-col gap-space-md border border-surface-container-high/40">
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md">
                         <div className="flex items-center gap-space-md">
                           <div className="w-12 h-12 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
@@ -1113,6 +1130,7 @@ export default function RegistroEntrega() {
                         </div>
                       </div>
                     </div>
+                    )}
 
                   </div>
                 </div>
@@ -1280,7 +1298,7 @@ export default function RegistroEntrega() {
               {/* ======================================================== */}
               {/* COLUMNA DERECHA: VISTA PREVIA DEL ACTA EN VIVO (5 cols)   */}
               {/* ======================================================== */}
-              <div className="xl:col-span-5 flex flex-col gap-space-md sticky top-20">
+              <div className="xl:col-span-12 flex flex-col gap-space-md">
                 
                 {/* Barra de Acciones del Acta */}
                 <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between gap-space-sm border border-surface-container-high/30">

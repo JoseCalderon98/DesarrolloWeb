@@ -175,5 +175,18 @@ export const initialDemoAssets = [
     ubicacion: 'Datacenter Principal - Rack 4',
     sede: 'Bogotá',
     ultimo_movimiento: 'Mantenimiento Preventivo Q1'
+  },
+  {
+    placa: 'CL-TI-0901',
+    equipo_nombre: 'Monitor LG UltraWide 29"',
+    equipo_specs: '29WL500-B 2560x1080',
+    serial: 'LG29M940KJ1X',
+    categoria: 'Monitores y Displays',
+    estado: 'ASIGNADO',
+    asignatario: 'Juan David Gutiérrez Zuleta',
+    asignatario_email: 'juan.gutierrez@casalimpia.com.co',
+    ubicacion: 'Bogotá - Av. El Dorado',
+    sede: 'Bogotá',
+    ultimo_movimiento: 'Entrega Acta #05-2026'
   }
 ];
