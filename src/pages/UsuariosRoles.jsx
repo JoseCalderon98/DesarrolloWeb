@@ -14,6 +14,7 @@ import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { ROLES, ROLE_INFO, initialPPIMembers, getStoredUser, setStoredUser } from '../utils/userHelpers';
+import Sidebar from '../components/Sidebar';
 
 export default function UsuariosRoles() {
   const navigate = useNavigate();
@@ -221,106 +222,7 @@ export default function UsuariosRoles() {
       )}
 
       {/* ASIDE / SIDEBAR */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low">
-            <img 
-              alt="Logo SGI CASALIMPIA" 
-              className="h-9 w-9 object-contain shrink-0" 
-              src="/logo-icon.svg"
-            />
-            <div className="flex flex-col">
-              <span className="font-headline-sm text-headline-sm text-primary leading-none font-bold">SGI CASALIMPIA</span>
-              <span className="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span>
-            </div>
-          </div>
-          <div className="px-space-xl py-space-sm">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">Menú Principal</span>
-          </div>
-          <nav className="px-space-md space-y-space-xs flex-1">
-            <a 
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/inventario')}
-            >
-              <span className="material-symbols-outlined text-[20px]">grid_view</span>
-              <span className="font-body-md text-body-md">Dashboard</span>
-            </a>
-            <a 
-              className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/inventario')}
-            >
-              <div className="flex items-center gap-space-md">
-                <span className="material-symbols-outlined text-[20px]">devices</span>
-                <span className="font-body-md text-body-md">Inventario de Activos</span>
-              </div>
-            </a>
-            <div className="pt-space-xs">
-              <div className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant rounded-lg">
-                <div className="flex items-center gap-space-md">
-                  <span className="material-symbols-outlined text-[20px]">assignment_return</span>
-                  <span className="font-body-md text-body-md font-semibold text-on-surface">Entrega y Recepción</span>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline">expand_more</span>
-              </div>
-              <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs">
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" 
-                  onClick={() => navigate('/entrega-hardware')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">post_add</span>
-                  <span className="font-body-sm text-body-sm">Nueva Entrega / Acta</span>
-                </a>
-                {currentUser?.rol !== 'Empleado' && (
-                  <a 
-                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                    onClick={() => navigate('/devoluciones')}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                    <span className="font-body-sm text-body-sm">Devoluciones (Reintegro)</span>
-                  </a>
-                )}
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/historial')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">history</span>
-                  <span className="font-body-sm text-body-sm">Historial y Auditoría</span>
-                </a>
-              </div>
-            </div>
-            <a 
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" 
-              onClick={() => navigate('/inventario')}
-            >
-              <span className="material-symbols-outlined text-[20px]">build_circle</span>
-              <span className="font-body-md text-body-md">Novedades y Mantenimiento</span>
-            </a>
-            <a 
-              className="flex items-center gap-space-md px-space-md py-space-sm bg-primary-container text-on-primary font-headline-sm rounded-lg transition-colors cursor-pointer"
-              onClick={() => {}}
-            >
-              <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
-              <span className="font-body-md text-body-md font-bold">Gestión de Usuarios y Roles</span>
-            </a>
-            <a 
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/inventario')}
-            >
-              <span className="material-symbols-outlined text-[20px]">verified_user</span>
-              <span className="font-body-md text-body-md">Reportes y Auditoría</span>
-            </a>
-          </nav>
-        </div>
-        <div className="p-space-lg m-space-md bg-surface-container rounded-xl flex items-center gap-space-md">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-on-primary">
-            <span className="material-symbols-outlined text-[18px]">verified</span>
-          </div>
-          <div className="flex flex-col overflow-hidden">
-            <span className="font-label-sm text-label-sm text-primary uppercase font-bold truncate">SGI Conectado</span>
-            <span className="font-body-sm text-body-sm text-outline truncate">Auditoría Legal ISO</span>
-          </div>
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="pl-72 flex flex-col min-h-screen">

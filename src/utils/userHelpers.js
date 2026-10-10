@@ -70,7 +70,7 @@ export const initialPPIMembers = [
   {
     nombre: 'Juan David Gutiérrez Zuleta',
     cedula: '1.020.455.891',
-    email: 'juan.gutierrez@casalimpia.com.co',
+    email: 'gjuandavid757@gmail.com',
     rol: 'Empleado',
     cargo: 'Analista de Operaciones y Servicios',
     area: 'Servicios Generales',

@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 import Inventario from './pages/Inventario'
 import RegistrarEquipo from './pages/RegistrarEquipo'
 import RegistroEntrega from './pages/RegistroEntrega'
@@ -15,6 +16,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/inventario" element={<Inventario />} />
           <Route path="/registrar-equipo" element={<RegistrarEquipo />} />
           <Route path="/entrega-hardware" element={<RegistroEntrega />} />

@@ -55,8 +55,8 @@ export default function Login() {
           profileUser = {
             nombre: username.split('@')[0],
             email: username,
-            rol: role === 'admin' ? 'Administrador' : 'Soporte TI',
-            cargo: role === 'admin' ? 'Ingeniero Administrador TI' : 'Técnico de Soporte',
+            rol: role === 'admin' ? 'Administrador' : role === 'empleado' ? 'Empleado' : 'Soporte TI',
+            cargo: role === 'admin' ? 'Ingeniero Administrador TI' : role === 'empleado' ? 'Analista de Operaciones' : 'Técnico de Soporte',
             area: 'Tecnología e Infraestructura',
             sede: 'Sede Bogotá Principal',
             avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'
@@ -93,9 +93,9 @@ export default function Login() {
       setPassword('TechSoporte2026!');
       setRole('soporte');
     } else if (demoKey === 'juan') {
-      setUsername('juan.gutierrez@casalimpia.com.co');
-      setPassword('Empleado2026*');
-      setRole('soporte');
+      setUsername('gjuandavid757@gmail.com');
+      setPassword('EmpleadoCasalimpia2026*');
+      setRole('empleado');
     }
   };
 

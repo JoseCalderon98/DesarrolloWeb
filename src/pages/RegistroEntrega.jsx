@@ -17,6 +17,7 @@ import { db, auth } from '../firebase';
 import { getStoredUser } from '../utils/userHelpers';
 import { initialDemoAssets } from '../utils/assetHelpers';
 import { generateAndPrintActa } from '../utils/actaPrintService';
+import Sidebar from '../components/Sidebar';
 
 const normalizeText = (text) => text ? String(text).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
 export default function RegistroEntrega() {
@@ -107,7 +108,6 @@ export default function RegistroEntrega() {
   // ----------------------------------------------------
   // SUSCRIPCIONES EN TIEMPO REAL A FIRESTORE
   // ----------------------------------------------------
-
   // A. Suscripción a Usuarios registrados en Firestore
   useEffect(() => {
     if (storedSession?.rol === 'Empleado') {
@@ -115,17 +115,25 @@ export default function RegistroEntrega() {
       return;
     }
     const qUsers = query(collection(db, "usuarios"));
-    const unsubUsers = onSnapshot(qUsers, (snapshot) => {
+    const unsubUsers = onSnapshot(qUsers, async (snapshot) => {
       const list = [];
       snapshot.forEach(docSnap => {
         list.push({ id: docSnap.id, ...docSnap.data() });
       });
+      
+      // Fallback: If the user hasn't seeded Firestore, merge local demo users
+      const { initialPPIMembers } = await import('../utils/userHelpers');
+      initialPPIMembers.forEach(demoUser => {
+        if (!list.find(u => u.email === demoUser.email)) {
+          // Give them a deterministic pseudo-id if they aren't in Firestore yet
+          list.push({ id: `demo-${demoUser.cedula}`, ...demoUser });
+        }
+      });
+
       setUsuariosDisponibles(list);
       setLoadingUsuarios(false);
 
       if (list.length > 0) {
-        // Seleccionar por defecto el colaborador receptor removido a petición del usuario.
-
         // Seleccionar por defecto el funcionario TI que entrega (preferencia sesión o Administrador / Soporte)
         if (!selectedDelivererId || !list.some(u => u.id === selectedDelivererId)) {
           const matchSession = list.find(u => u.email === storedSession?.email);
@@ -135,7 +143,12 @@ export default function RegistroEntrega() {
       }
     }, (err) => {
       console.error("Error Firestore Usuarios:", err);
-      setLoadingUsuarios(false);
+      // Fallback in case of permissions error
+      import('../utils/userHelpers').then(({ initialPPIMembers }) => {
+        const fallbackList = initialPPIMembers.map(u => ({ id: `demo-${u.cedula}`, ...u }));
+        setUsuariosDisponibles(fallbackList);
+        setLoadingUsuarios(false);
+      });
     });
 
     return () => unsubUsers();
@@ -251,6 +264,29 @@ export default function RegistroEntrega() {
       setSelectedColaboradorId(match.id);
     } else {
       alert("No se encontró ningún usuario registrado en la base de datos con ese criterio.");
+    }
+  };
+
+  // Semilla rápida de colaboradores de prueba si Firestore está vacío
+  const handleSeedUsuariosDemo = async () => {
+    try {
+      setIsSubmitting(true);
+      const batch = writeBatch(db);
+      const { initialPPIMembers } = await import('../utils/userHelpers');
+      initialPPIMembers.forEach((user) => {
+        const newDocRef = doc(collection(db, "usuarios"));
+        batch.set(newDocRef, {
+          ...user,
+          createdAt: serverTimestamp()
+        });
+      });
+      await batch.commit();
+      setSuccessMsg("Usuarios de prueba de CASALIMPIA cargados exitosamente.");
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err) {
+      alert("Error al inicializar usuarios: " + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -574,116 +610,7 @@ export default function RegistroEntrega() {
       )}
 
       {/* ASIDE / SIDEBAR OFICIAL SGI */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low border-b border-surface-container-highest/30">
-            <img 
-              alt="Logo SGI CASALIMPIA" 
-              className="h-9 w-9 object-contain shrink-0" 
-              src="/logo-icon.svg"
-            />
-            <div className="flex flex-col">
-              <span className="font-headline-sm text-headline-sm text-primary leading-none font-bold">SGI CASALIMPIA</span>
-              <span className="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span>
-            </div>
-          </div>
-
-          <div className="px-space-xl py-space-sm">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">Menú Principal</span>
-          </div>
-
-          <nav className="px-space-md space-y-space-xs flex-1">
-            <a 
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/inventario')}
-            >
-              <span className="material-symbols-outlined text-[20px]">grid_view</span>
-              <span className="font-body-md text-body-md">Dashboard General</span>
-            </a>
-
-            <a 
-              className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/inventario')}
-            >
-              <div className="flex items-center gap-space-md">
-                <span className="material-symbols-outlined text-[20px]">devices</span>
-                <span className="font-body-md text-body-md">Inventario de Activos</span>
-              </div>
-              <span className="font-code-mono text-code-mono bg-surface-container-highest text-primary font-semibold px-space-sm py-0.5 rounded-full text-xs">
-                {equipos.length}
-              </span>
-            </a>
-
-            {/* Menú Entrega y Recepción */}
-            <div className="pt-space-xs">
-              <div className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant rounded-lg">
-                <div className="flex items-center gap-space-md">
-                  <span className="material-symbols-outlined text-[20px] text-primary">assignment_return</span>
-                  <span className="font-body-md text-body-md font-semibold text-on-surface">Entrega y Custodia</span>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline">expand_more</span>
-              </div>
-              <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs border-l-2 border-primary/20">
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs transition-colors bg-primary-container text-on-primary font-headline-sm rounded-lg cursor-pointer" 
-                  onClick={() => {}}
-                >
-                  <span className="material-symbols-outlined text-[16px]">post_add</span>
-                  <span className="font-body-sm text-body-sm font-bold">Nueva Entrega (RF-04)</span>
-                </a>
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/devoluciones')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                  <span className="font-body-sm text-body-sm">Devoluciones (Reintegro)</span>
-                </a>
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/historial')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">history</span>
-                  <span className="font-body-sm text-body-sm">Historial y Auditoría ({historialActas.length})</span>
-                </a>
-              </div>
-            </div>
-
-            <a 
-              className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/usuarios-roles')}
-            >
-              <div className="flex items-center gap-space-md">
-                <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
-                <span className="font-body-md text-body-md">Usuarios y Roles</span>
-              </div>
-              <span className="font-code-mono text-code-mono bg-secondary/15 text-secondary font-bold px-space-sm py-0.5 rounded-full text-xs">
-                {usuariosDisponibles.length}
-              </span>
-            </a>
-
-            <a 
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/registrar-equipo')}
-            >
-              <span className="material-symbols-outlined text-[20px]">add_circle</span>
-              <span className="font-body-md text-body-md">Registrar Hardware (RF-02)</span>
-            </a>
-          </nav>
-        </div>
-
-        {/* Indicador de Conexión Real */}
-        <div className="p-space-lg m-space-md bg-surface-container rounded-xl flex items-center gap-space-md border border-surface-container-highest/40">
-          <div className="h-9 w-9 rounded-lg bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-[20px]">cloud_done</span>
-          </div>
-          <div className="flex flex-col overflow-hidden">
-            <span className="font-label-sm text-label-sm text-primary uppercase font-bold truncate">Firestore SGI</span>
-            <span className="font-body-sm text-body-sm text-outline truncate">
-              {usuariosDisponibles.length} Usuarios • {equipos.length} Activos
-            </span>
-          </div>
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="pl-72 flex flex-col min-h-screen">
@@ -694,7 +621,7 @@ export default function RegistroEntrega() {
             <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0">
               <span className="material-symbols-outlined text-[16px] text-secondary">domain</span>
               <span className="font-label-sm text-label-sm font-semibold truncate">
-                {deliverer.sede || 'Sede Principal Casalimpia S.A. • Bogotá D.C.'}
+                {storedSession?.sede || 'Sede Principal Casalimpia S.A. • Bogotá D.C.'}
               </span>
             </div>
 
@@ -729,16 +656,16 @@ export default function RegistroEntrega() {
             <div className="flex items-center gap-space-md pl-space-xs">
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="font-label-md text-label-md text-on-surface font-bold">
-                  {deliverer.nombre}
+                  {storedSession?.nombre || 'Funcionario SGI'}
                 </span>
                 <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                  {deliverer.cargo || deliverer.rol || 'Administrador TI'}
+                  {storedSession?.cargo || storedSession?.rol || 'Administrador TI'}
                 </span>
               </div>
               <img 
                 alt="Foto Perfil" 
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" 
-                src={deliverer.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
+                src={storedSession?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
               />
               <button 
                 onClick={handleLogout} 
@@ -853,6 +780,20 @@ export default function RegistroEntrega() {
                   </div>
 
                   <div className="flex flex-col gap-space-md">
+                    {usuariosDisponibles.length === 0 && !loadingUsuarios && (
+                      <div className="bg-surface-container-low p-space-md rounded-lg flex flex-col items-center justify-center gap-space-sm mb-space-sm">
+                        <span className="material-symbols-outlined text-[32px] text-outline">group_off</span>
+                        <p className="font-body-sm text-center text-on-surface-variant">No hay colaboradores en la base de datos.</p>
+                        <button
+                          onClick={handleSeedUsuariosDemo}
+                          disabled={isSubmitting}
+                          className="px-space-md py-2 bg-secondary text-on-secondary rounded-lg font-label-md font-semibold hover:bg-secondary/90 transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">group_add</span>
+                          Cargar 4 Usuarios Demo
+                        </button>
+                      </div>
+                    )}
                     
                     {/* Búsqueda Rápida por Cédula o Nombre */}
                     <div className="flex flex-col gap-space-xs">

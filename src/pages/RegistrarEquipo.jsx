@@ -5,6 +5,7 @@ import { auth } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getStoredUser } from '../utils/userHelpers';
+import Sidebar from '../components/Sidebar';
 
 export default function RegistrarEquipo() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function RegistrarEquipo() {
     }
   };
 
+  const currentUser = getStoredUser();
   useEffect(() => {
     const user = getStoredUser();
     if (user?.rol === 'Empleado') {
@@ -52,6 +54,11 @@ export default function RegistrarEquipo() {
         asignatario,
         ubicacion,
         ultimo_movimiento: 'Alta Sistema RF-02',
+        registrado_por: {
+          id: currentUser?.id || 'N/A',
+          nombre: currentUser?.nombre || 'Administrador TI',
+          email: currentUser?.email || 'N/A'
+        },
         createdAt: serverTimestamp()
       });
       // Navegar directo al inventario tras el éxito
@@ -65,33 +72,38 @@ export default function RegistrarEquipo() {
   return (
     <div className="bg-background font-body-md text-on-surface antialiased min-h-screen">
       {/* Sidebar - Mantenido para consistencia UI */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low">
-            <img alt="Logo SGI CASALIMPIA" className="h-9 w-9 object-contain shrink-0" src="/logo-icon.svg"/>
-            <div className="flex flex-col">
-              <span className="font-headline-sm text-headline-sm text-primary leading-none font-bold">SGI CASALIMPIA</span>
-              <span className="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span>
-            </div>
-          </div>
-          <div className="px-space-xl py-space-sm">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">Menú Principal</span>
-          </div>
-          <nav className="px-space-md space-y-space-xs flex-1">
-            <a className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" onClick={() => navigate('/inventario')}>
-              <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-              <span className="font-body-md text-body-md">Volver al Inventario</span>
-            </a>
-          </nav>
-        </div>
-      </aside>
+      <Sidebar />
 
       <div className="pl-72 flex flex-col min-h-screen">
         <header className="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-space-xl flex items-center justify-between gap-space-lg">
           <div className="flex items-center gap-space-lg flex-1 max-w-2xl">
             <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0">
               <span className="material-symbols-outlined text-[16px] text-secondary">location_on</span>
-              <span className="font-label-sm text-label-sm font-semibold truncate">Sede Principal Av. El Dorado #100-80, Bogotá</span>
+              <span className="font-label-sm text-label-sm font-semibold truncate">{currentUser?.sede || 'Sede Principal Av. El Dorado #100-80, Bogotá'}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-space-md shrink-0">
+            <div className="flex items-center gap-space-md pl-space-xs">
+              <div className="flex flex-col text-right hidden sm:flex">
+                <span className="font-label-md text-label-md text-on-surface font-bold">
+                  {currentUser?.nombre || 'Funcionario SGI'}
+                </span>
+                <span className="font-label-sm text-label-sm text-secondary font-semibold">
+                  {currentUser?.cargo || currentUser?.rol || 'Administrador TI'}
+                </span>
+              </div>
+              <img
+                alt="Profile"
+                className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm"
+                src={currentUser?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q"}
+              />
+              <button 
+                onClick={handleLogout} 
+                className="ml-2 hover:bg-error-container hover:text-error text-outline p-1.5 rounded-full transition-colors cursor-pointer" 
+                title="Cerrar Sesión"
+              >
+                <span className="material-symbols-outlined text-[20px]">logout</span>
+              </button>
             </div>
           </div>
         </header>

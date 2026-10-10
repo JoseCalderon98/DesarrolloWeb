@@ -15,6 +15,7 @@ import { signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { getStoredUser } from '../utils/userHelpers';
 import { generateAndPrintActa } from '../utils/actaPrintService';
+import Sidebar from '../components/Sidebar';
 
 export default function Devoluciones() {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ export default function Devoluciones() {
   // 2. Selección de Equipo Asignado a Devolver
   const [selectedEquipoId, setSelectedEquipoId] = useState('');
   const [equipoSearch, setEquipoSearch] = useState('');
+  const [showEquipoDocs, setShowEquipoDocs] = useState(false);
   const [verSoloAsignados, setVerSoloAsignados] = useState(true);
 
   // 3. Funcionario TI que Recibe el Reintegro
@@ -111,13 +113,6 @@ export default function Devoluciones() {
       setEquipos(list);
       setLoadingEquipos(false);
 
-      // Auto-seleccionar primer equipo asignado
-      const asignados = list.filter(e => e.estado === 'ASIGNADO');
-      if (asignados.length > 0 && !selectedEquipoId) {
-        setSelectedEquipoId(asignados[0].id);
-      } else if (list.length > 0 && !selectedEquipoId) {
-        setSelectedEquipoId(list[0].id);
-      }
     }, (err) => {
       console.error("Error Firestore Equipos:", err);
       setLoadingEquipos(false);
@@ -197,22 +192,13 @@ export default function Devoluciones() {
   const tiOptions = funcionariosTI.length > 0 ? funcionariosTI : usuariosDisponibles;
 
   // Búsqueda interactiva de equipo asignado
-  const handleSearchEquipo = () => {
-    if (!equipoSearch.trim()) return;
-    const q = equipoSearch.toLowerCase().trim();
-    const match = equipos.find(e => 
-      (e.placa || '').toLowerCase().includes(q) ||
-      (e.serial || '').toLowerCase().includes(q) ||
-      (e.asignatario || '').toLowerCase().includes(q) ||
-      (e.equipo_nombre || '').toLowerCase().includes(q)
-    );
-    if (match) {
-      setSelectedEquipoId(match.id);
-    } else {
-      alert("No se encontró ningún equipo en la base de datos con ese criterio de búsqueda.");
-    }
-  };
-
+  const filteredEquipos = equipoSearch.trim() === '' ? [] : equiposVisibles.filter(eq => {
+    const term = equipoSearch.toLowerCase().trim();
+    return (eq.equipo_nombre || '').toLowerCase().includes(term) ||
+           (eq.placa || '').toLowerCase().includes(term) ||
+           (eq.serial || '').toLowerCase().includes(term) ||
+           (eq.asignatario || '').toLowerCase().includes(term);
+  });
   // ----------------------------------------------------
   // INICIALIZAR CANVAS DE FIRMA DIGITAL
   // ----------------------------------------------------
@@ -517,110 +503,7 @@ export default function Devoluciones() {
       )}
 
       {/* ASIDE / SIDEBAR */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low border-b border-surface-container-highest/30">
-            <img 
-              alt="Logo SGI CASALIMPIA" 
-              className="h-9 w-9 object-contain shrink-0" 
-              src="/logo-icon.svg"
-            />
-            <div className="flex flex-col">
-              <span className="font-headline-sm text-headline-sm text-primary leading-none font-bold">SGI CASALIMPIA</span>
-              <span className="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span>
-            </div>
-          </div>
-
-          <div className="px-space-xl py-space-sm">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">Menú Principal</span>
-          </div>
-
-          <nav className="px-space-md space-y-space-xs flex-1">
-            <a 
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/inventario')}
-            >
-              <span className="material-symbols-outlined text-[20px]">grid_view</span>
-              <span className="font-body-md text-body-md">Dashboard General</span>
-            </a>
-
-            <a 
-              className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => navigate('/inventario')}
-            >
-              <div className="flex items-center gap-space-md">
-                <span className="material-symbols-outlined text-[20px]">devices</span>
-                <span className="font-body-md text-body-md">Inventario de Activos</span>
-              </div>
-              <span className="font-code-mono text-code-mono bg-surface-container-highest text-primary font-semibold px-space-sm py-0.5 rounded-full text-xs">
-                {equipos.length}
-              </span>
-            </a>
-
-            {/* Menú Entrega y Custodia */}
-            <div className="pt-space-xs">
-              <div className="flex items-center justify-between px-space-md py-space-sm text-on-surface rounded-lg font-semibold">
-                <div className="flex items-center gap-space-md">
-                  <span className="material-symbols-outlined text-[20px] text-primary">assignment_return</span>
-                  <span className="font-body-md text-body-md">Entrega y Custodia</span>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline">expand_more</span>
-              </div>
-              <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs border-l-2 border-primary/20">
-                {storedSession?.rol !== 'Empleado' && (
-                  <a 
-                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer" 
-                    onClick={() => navigate('/entrega-hardware')}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">post_add</span>
-                    <span className="font-body-sm text-body-sm">Nueva Entrega (RF-04)</span>
-                  </a>
-                )}
-                {storedSession?.rol !== 'Empleado' && (
-                  <a 
-                    className="flex items-center gap-space-sm px-space-md py-space-xs transition-colors bg-primary-container text-on-primary font-headline-sm rounded-lg cursor-pointer"
-                    onClick={() => {}}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                    <span className="font-body-sm text-body-sm font-bold">Devoluciones (Reintegro)</span>
-                  </a>
-                )}
-                <a 
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/historial')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">history</span>
-                  <span className="font-body-sm text-body-sm">Historial y Auditoría</span>
-                </a>
-              </div>
-            </div>
-
-            {storedSession?.rol !== 'Empleado' && (
-              <a 
-                className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                onClick={() => navigate('/usuarios-roles')}
-              >
-                <div className="flex items-center gap-space-md">
-                  <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
-                  <span className="font-body-md text-body-md">Usuarios y Roles</span>
-                </div>
-              </a>
-            )}
-          </nav>
-        </div>
-
-        <div className="p-space-lg m-space-md bg-surface-container rounded-xl flex items-center gap-space-md border border-surface-container-highest/40">
-          <div className="h-9 w-9 rounded-lg bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-sm">
-            <span className="material-symbols-outlined text-[20px]">verified</span>
-          </div>
-          <div className="flex flex-col overflow-hidden">
-            <span className="font-label-sm text-label-sm text-primary uppercase font-bold truncate">Reintegros TI-FO-05</span>
-            <span className="font-body-sm text-body-sm text-outline truncate">
-              {equiposAsignados.length} Equipos Asignados
-            </span>
-          </div>
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="pl-72 flex flex-col min-h-screen">
@@ -631,7 +514,7 @@ export default function Devoluciones() {
             <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0">
               <span className="material-symbols-outlined text-[16px] text-secondary">domain</span>
               <span className="font-label-sm text-label-sm font-semibold truncate">
-                {receivingTIUser.sede || 'Sede Principal Casalimpia S.A. • Mesa Técnica de Entrada'}
+                {storedSession?.sede || 'Sede Principal Casalimpia S.A. • Mesa Técnica de Entrada'}
               </span>
             </div>
 
@@ -665,16 +548,16 @@ export default function Devoluciones() {
             <div className="flex items-center gap-space-md pl-space-xs">
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="font-label-md text-label-md text-on-surface font-bold">
-                  {receivingTIUser.nombre}
+                  {storedSession?.nombre || 'Receptor SGI'}
                 </span>
                 <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                  {receivingTIUser.cargo || receivingTIUser.rol || 'Receptor TI'}
+                  {storedSession?.cargo || storedSession?.rol || 'Receptor TI'}
                 </span>
               </div>
               <img 
                 alt="Foto Perfil" 
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20 shadow-sm" 
-                src={receivingTIUser.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
+                src={storedSession?.avatar || 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyAiWOUn9njbbS4sZzxnzDv-_O7nlKMP0d8Uj3JmLf2C_0yjiCZpAy_-U4uCYuUD42dh2KBHFoTT45HDNZZYJ4xGPuondY8OzWlnn7_ZuxW3T5adr-8kHHxYrg8TKac--UfaKWJfhULlk7ZTIvToV2_6HQK6K4NU1fRHrt-A4bVhe1TrF6kp8FaNl7tV6SQ4Q_7jCd97VAYDW2x8agwEazqetgfvCbDatPHJzic_KZM9Czjj8JNoYE6Q'}
               />
               <button 
                 onClick={handleLogout} 
@@ -720,11 +603,11 @@ export default function Devoluciones() {
               </div>
             </div>
 
-            {/* Layout Dos Columnas */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+            {/* Layout Dos Columnas -> Transformado a Una Columna */}
+            <div className="flex flex-col gap-space-lg items-start">
               
-              {/* COLUMNA IZQUIERDA: FORMULARIO DE REINTEGRO */}
-              <div className="xl:col-span-7 flex flex-col gap-space-lg">
+              {/* FORMULARIO DE REINTEGRO */}
+              <div className="w-full flex flex-col gap-space-lg">
                 
                 {/* BLOQUE 1: Selección del Activo Asignado */}
                 <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container-high/30">
@@ -772,53 +655,73 @@ export default function Devoluciones() {
                         </button>
                       </div>
 
-                      <div className="relative">
-                        <select 
-                          className="w-full h-11 px-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary appearance-none cursor-pointer pr-10 shadow-xs"
-                          value={selectedEquipoId}
-                          onChange={(e) => setSelectedEquipoId(e.target.value)}
-                        >
-                          {equiposVisibles.length === 0 ? (
-                            <option value="">No hay equipos para devolver.</option>
-                          ) : (
-                            equiposVisibles.map(e => (
-                              <option key={e.id} value={e.id}>
-                                {e.equipo_nombre} • Placa: {e.placa} • Custodio Actual: {e.asignatario || 'Sin asignar'} [{e.estado}]
-                              </option>
-                            ))
-                          )}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-space-md top-1/2 -translate-y-1/2 pointer-events-none text-outline">
-                          expand_more
-                        </span>
+                      <div className="relative w-full">
+                        <span className="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">laptop_chromebook</span>
+                        <input 
+                          className="w-full h-11 pl-10 pr-4 bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary shadow-xs" 
+                          placeholder="Buscar activo asignado por placa o custodio..." 
+                          type="text" 
+                          value={equipoSearch}
+                          onChange={(e) => {
+                            setEquipoSearch(e.target.value);
+                            setShowEquipoDocs(true);
+                          }}
+                          onFocus={() => setShowEquipoDocs(true)}
+                          onBlur={() => setTimeout(() => setShowEquipoDocs(false), 200)}
+                        />
+                        {showEquipoDocs && filteredEquipos.length > 0 && (
+                          <ul className="absolute z-[60] w-full mt-1 bg-surface-container-lowest border border-surface-container-highest/40 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                            {filteredEquipos.map(eq => (
+                              <li 
+                                key={eq.id}
+                                className="px-space-md py-space-sm hover:bg-surface-container cursor-pointer flex flex-col border-b border-surface-container-high/20 last:border-0"
+                                onMouseDown={() => {
+                                  setSelectedEquipoId(eq.id);
+                                  setEquipoSearch(`${eq.equipo_nombre} • Placa: ${eq.placa} • Custodio Actual: ${eq.asignatario || 'Sin asignar'} [${eq.estado}]`);
+                                  setShowEquipoDocs(false);
+                                }}
+                              >
+                                <span className="font-bold text-on-surface">{eq.equipo_nombre} • [{eq.estado}]</span>
+                                <span className="text-xs text-on-surface-variant">PLACA: {eq.placa} • Custodio: {eq.asignatario}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {showEquipoDocs && equipoSearch.trim() !== '' && filteredEquipos.length === 0 && (
+                          <div className="absolute z-[60] w-full mt-1 bg-surface-container-lowest border border-surface-container-highest/40 rounded-lg shadow-xl p-space-md text-center text-sm text-outline">
+                            No se encontraron equipos con ese criterio.
+                          </div>
+                        )}
                       </div>
                     </div>
 
                     {/* Ficha del Colaborador Custodio Actual (Cargado en vivo de Firestore) */}
-                    <div className="bg-surface-container-low p-space-md rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md border border-surface-container-high/40 shadow-xs">
-                      <div className="flex items-center gap-space-md">
-                        <div className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-headline-sm shadow-sm">
-                          {colaboradorAsignado.nombre?.charAt(0) || 'C'}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-label-sm text-[11px] text-outline uppercase font-semibold">Custodio que entrega el equipo:</span>
-                          <span className="font-headline-sm text-headline-sm text-primary font-bold">
-                            {colaboradorAsignado.nombre}
-                          </span>
-                          <div className="flex items-center gap-space-sm text-body-sm text-on-surface-variant flex-wrap">
-                            <span className="font-code-mono font-bold text-primary">C.C. {colaboradorAsignado.cedula}</span>
-                            <span>•</span>
-                            <span>{colaboradorAsignado.cargo}</span>
+                    {selectedEquipoId && (
+                      <div className="bg-surface-container-low p-space-md rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md border border-surface-container-high/40 shadow-xs animate-fade-in">
+                        <div className="flex items-center gap-space-md">
+                          <div className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-headline-sm shadow-sm">
+                            {colaboradorAsignado.nombre?.charAt(0) || 'C'}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-label-sm text-[11px] text-outline uppercase font-semibold">Custodio que entrega el equipo:</span>
+                            <span className="font-headline-sm text-headline-sm text-primary font-bold">
+                              {colaboradorAsignado.nombre}
+                            </span>
+                            <div className="flex items-center gap-space-sm text-body-sm text-on-surface-variant flex-wrap">
+                              <span className="font-code-mono font-bold text-primary">C.C. {colaboradorAsignado.cedula}</span>
+                              <span>•</span>
+                              <span>{colaboradorAsignado.cargo}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-col sm:items-end gap-1 bg-surface-container-lowest p-space-sm rounded-lg shadow-xs shrink-0">
-                        <span className="font-label-sm text-label-sm text-outline uppercase font-semibold">Placa a Reintegrar</span>
-                        <span className="font-code-mono text-headline-sm font-black text-secondary">{currentEquipo.placa}</span>
-                        <span className="font-body-sm text-xs text-on-surface-variant">{currentEquipo.serial}</span>
+                        <div className="flex flex-col sm:items-end gap-1 bg-surface-container-lowest p-space-sm rounded-lg shadow-xs shrink-0">
+                          <span className="font-label-sm text-label-sm text-outline uppercase font-semibold">Placa a Reintegrar</span>
+                          <span className="font-code-mono text-headline-sm font-black text-secondary">{currentEquipo.placa}</span>
+                          <span className="font-body-sm text-xs text-on-surface-variant">{currentEquipo.serial}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Funcionario TI que Recibe */}
                     <div className="flex flex-col gap-space-xs pt-space-xs border-t border-surface-container-high/30">
@@ -826,21 +729,12 @@ export default function Devoluciones() {
                         <span className="material-symbols-outlined text-primary text-[18px]">verified_user</span>
                         Funcionario TI que Recibe e Inspecciona:
                       </label>
-                      <div className="relative">
-                        <select 
-                          className="w-full h-10 px-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary appearance-none cursor-pointer pr-10"
-                          value={selectedReceivingTIId}
-                          onChange={(e) => setSelectedReceivingTIId(e.target.value)}
-                        >
-                          {tiOptions.map(u => (
-                            <option key={u.id} value={u.id}>
-                              {u.nombre} — {u.cargo || u.rol} ({u.sede || 'Sede Principal'})
-                            </option>
-                          ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-space-md top-1/2 -translate-y-1/2 pointer-events-none text-outline">
-                          expand_more
-                        </span>
+                      <div className="flex items-center gap-space-sm p-space-sm bg-surface-container-low rounded-lg border border-surface-container-high/40">
+                        <span className="material-symbols-outlined text-secondary text-[24px]">shield_person</span>
+                        <div className="flex flex-col">
+                          <span className="font-headline-sm text-body-md text-on-surface font-semibold">{receivingTIUser.nombre}</span>
+                          <span className="font-body-sm text-[12px] text-on-surface-variant">{receivingTIUser.cargo || receivingTIUser.rol} • {receivingTIUser.sede || 'Sede Principal'}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -1045,7 +939,7 @@ export default function Devoluciones() {
               </div>
 
               {/* COLUMNA DERECHA: VISTA PREVIA ACTA DE REINTEGRO (TI-FO-05) */}
-              <div className="xl:col-span-5 flex flex-col gap-space-md sticky top-20">
+              <div className="w-full max-w-4xl mx-auto flex flex-col gap-space-md mt-space-lg">
                 
                 {/* Cabecera de Vista Previa */}
                 <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between gap-space-sm border border-surface-container-high/30">

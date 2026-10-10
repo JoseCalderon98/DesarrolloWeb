@@ -9,13 +9,15 @@ import {
   writeBatch,
   where,
   addDoc,
-  arrayUnion
+  arrayUnion,
+  serverTimestamp
 } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { exportToCSV, parseCSV, initialDemoAssets } from '../utils/assetHelpers';
 import { getStoredUser } from '../utils/userHelpers';
+import Sidebar from '../components/Sidebar';
 
 export default function Inventario() {
   const currentUser = getStoredUser();
@@ -94,7 +96,11 @@ export default function Inventario() {
 
         // Filtrado RBAC estricto en el lado del cliente (si las reglas de Firebase limitan el uso de where)
         if (currentUser?.rol === 'Empleado') {
-          list = list.filter(item => item.asignatario_email === currentUser.email);
+          list = list.filter(item => {
+            const matchEmail = item.asignatario_email && item.asignatario_email.trim().toLowerCase() === currentUser.email.trim().toLowerCase();
+            const matchNombre = item.asignatario && item.asignatario.trim().toLowerCase() === currentUser.nombre.trim().toLowerCase();
+            return matchEmail || matchNombre;
+          });
         }
 
         setEquipos(list);
@@ -250,6 +256,16 @@ export default function Inventario() {
   const handleDeleteOne = async (equipo) => {
     if (window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el equipo con placa ${equipo.placa}?`)) {
       try {
+        await addDoc(collection(db, "movimientos"), {
+          tipo: 'BAJA',
+          fecha: serverTimestamp(),
+          placa: equipo.placa,
+          equipo_nombre: equipo.equipo_nombre,
+          serial: equipo.serial,
+          descripcion: `Eliminación permanente del sistema (Baja Definitiva).`,
+          responsable: currentUser?.nombre || 'Administrador TI',
+          colaborador_nombre: equipo.asignatario || 'N/A'
+        });
         await deleteDoc(doc(db, "equipos", equipo.id));
         setSelectedIds(prev => prev.filter(id => id !== equipo.id));
         setSuccessMsg(`Equipo ${equipo.placa} eliminado exitosamente.`);
@@ -267,9 +283,23 @@ export default function Inventario() {
       try {
         setIsProcessing(true);
         const batch = writeBatch(db);
-        selectedIds.forEach(id => {
+        for (const id of selectedIds) {
+          const eq = filteredEquipos.find(e => e.id === id);
+          if (eq) {
+            const movRef = doc(collection(db, "movimientos"));
+            batch.set(movRef, {
+              tipo: 'BAJA',
+              fecha: serverTimestamp(),
+              placa: eq.placa,
+              equipo_nombre: eq.equipo_nombre,
+              serial: eq.serial,
+              descripcion: `Eliminación en lote del sistema (Baja Definitiva).`,
+              responsable: currentUser?.nombre || 'Administrador TI',
+              colaborador_nombre: eq.asignatario || 'N/A'
+            });
+          }
           batch.delete(doc(db, "equipos", id));
-        });
+        }
         await batch.commit();
         setSelectedIds([]);
         setSuccessMsg(`Se eliminaron ${selectedIds.length} equipos.`);
@@ -345,7 +375,7 @@ export default function Inventario() {
     // Regla de Negocio: No se puede mandar a taller o dar de baja un equipo que sigue asignado.
     if (accion === 'MANTENIMIENTO' || accion === 'DADO DE BAJA') {
       const targetEq = equipos.find(e => e.id === novedad.equipo_id);
-      if (targetEq && (targetEq.estado === 'ASIGNADO' || (targetEq.asignatario !== 'Bodega Centralizada TI' && targetEq.asignatario !== ''))) {
+      if (targetEq && targetEq.estado === 'ASIGNADO') {
         alert("⚠️ Acción Bloqueada: El equipo aún se encuentra asignado a un empleado. Obligatoriamente debes formalizar la 'Devolución' del equipo en el módulo respectivo para desvincularlo antes de pasarlo a Mantenimiento o Darlo de Baja.");
         return;
       }
@@ -473,117 +503,7 @@ export default function Inventario() {
       )}
 
       {/* ASIDE / SIDEBAR */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="h-16 px-space-xl flex items-center gap-space-md bg-surface-container-low">
-            <img
-              alt="Logo SGI CASALIMPIA"
-              className="h-9 w-9 object-contain shrink-0"
-              src="/logo-icon.svg"
-            />
-            <div className="flex flex-col">
-              <span className="font-headline-sm text-headline-sm text-primary leading-none font-bold">SGI CASALIMPIA</span>
-              <span className="font-label-sm text-label-sm text-outline tracking-wider uppercase">Activos TI</span>
-            </div>
-          </div>
-          <div className="px-space-xl py-space-sm">
-            <span className="font-label-sm text-label-sm uppercase tracking-wider text-outline">Menú Principal</span>
-          </div>
-          <nav className="px-space-md space-y-space-xs flex-1">
-            <a
-              className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-              onClick={() => handleResetFilters()}
-            >
-              <span className="material-symbols-outlined text-[20px]">grid_view</span>
-              <span className="font-body-md text-body-md">Dashboard</span>
-            </a>
-            <a
-              aria-current="page"
-              className="flex items-center justify-between px-space-md py-space-sm transition-colors bg-primary-container text-on-primary font-headline-sm rounded-lg cursor-pointer"
-              onClick={() => handleResetFilters()}
-            >
-              <div className="flex items-center gap-space-md">
-                <span className="material-symbols-outlined text-[20px]">devices</span>
-                <span className="font-body-md text-body-md">Inventario de Activos</span>
-              </div>
-              <span className="font-code-mono text-code-mono bg-surface-container-highest text-primary font-semibold px-space-sm py-0.5 rounded-full">
-                {totalEquipos}
-              </span>
-            </a>
-            <div className="pt-space-xs">
-              <div className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant rounded-lg">
-                <div className="flex items-center gap-space-md">
-                  <span className="material-symbols-outlined text-[20px]">assignment_return</span>
-                  <span className="font-body-md text-body-md font-semibold text-on-surface">Entrega y Recepción</span>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-outline">expand_more</span>
-              </div>
-              <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs">
-                {currentUser?.rol !== 'Empleado' && (
-                  <a
-                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                    onClick={() => navigate('/entrega-hardware')}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">post_add</span>
-                    <span className="font-body-sm text-body-sm">Nueva Entrega / Acta</span>
-                  </a>
-                )}
-                {currentUser?.rol !== 'Empleado' && (
-                  <a
-                    className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                    onClick={() => navigate('/devoluciones')}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
-                    <span className="font-body-sm text-body-sm">Devoluciones</span>
-                  </a>
-                )}
-                <a
-                  className="flex items-center gap-space-sm px-space-md py-space-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/historial')}
-                >
-                  <span className="material-symbols-outlined text-[16px]">history</span>
-                  <span className="font-body-sm text-body-sm">Historial</span>
-                </a>
-              </div>
-            </div>
-            
-            {currentUser?.rol !== 'Empleado' && (
-              <>
-                <a
-                  className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => setFilterStatus('MANTENIMIENTO')}
-                >
-                  <span className="material-symbols-outlined text-[20px]">build_circle</span>
-                  <span className="font-body-md text-body-md">Novedades y Mantenimiento</span>
-                </a>
-                <a
-                  className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => navigate('/usuarios-roles')}
-                >
-                  <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
-                  <span className="font-body-md text-body-md">Gestión de Usuarios y Roles</span>
-                </a>
-                <a
-                  className="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg transition-colors cursor-pointer"
-                  onClick={() => exportToCSV(filteredEquipos.length > 0 ? filteredEquipos : equipos, 'auditoria_iso20000_casalimpia.csv')}
-                >
-                  <span className="material-symbols-outlined text-[20px]">verified_user</span>
-                  <span className="font-body-md text-body-md">Reportes y Auditoría</span>
-                </a>
-              </>
-            )}
-          </nav>
-        </div>
-        <div className="p-space-lg m-space-md bg-surface-container rounded-xl flex items-center gap-space-md">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-on-primary">
-            <span className="material-symbols-outlined text-[18px]">verified</span>
-          </div>
-          <div className="flex flex-col overflow-hidden">
-            <span className="font-label-sm text-label-sm text-primary uppercase font-bold truncate">SGI Conectado</span>
-            <span className="font-body-sm text-body-sm text-outline truncate">Auditoría Legal ISO</span>
-          </div>
-        </div>
-      </aside>
+      <Sidebar />
 
       {/* CONTENIDO PRINCIPAL */}
       <div className="pl-72 flex flex-col min-h-screen">
@@ -593,7 +513,7 @@ export default function Inventario() {
           <div className="flex items-center gap-space-lg flex-1 max-w-2xl">
             <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0">
               <span className="material-symbols-outlined text-[16px] text-secondary">location_on</span>
-              <span className="font-label-sm text-label-sm font-semibold truncate">Sede Principal Av. El Dorado #100-80, Bogotá</span>
+              <span className="font-label-sm text-label-sm font-semibold truncate">{currentUser?.sede || 'Sede Principal Av. El Dorado #100-80, Bogotá'}</span>
             </div>
             <div className="relative w-full max-w-md">
               <span className="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
@@ -737,8 +657,9 @@ export default function Inventario() {
             {activeTab === 'INVENTARIO' && (
               <div className="animate-fadeIn flex flex-col w-full">
 
-            {/* SECCIÓN DE TARJETAS KPI (Dinámicas) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
+            {/* SECCIÓN DE TARJETAS KPI (Dinámicas) - Solo para Admin/Soporte */}
+            {currentUser?.rol !== 'Empleado' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
 
               {/* KPI 1: Total Equipos */}
               <div
@@ -832,7 +753,8 @@ export default function Inventario() {
                   <span>Atención prioritaria SLA TI</span>
                 </div>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* BARRA DE BÚSQUEDA Y FILTROS AVANZADOS */}
             <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm mb-space-lg flex flex-col gap-space-md">
@@ -1003,8 +925,9 @@ export default function Inventario() {
               </div>
             </div>
 
-            {/* SEGMENTOS PRIORITARIOS (Interactivos con Firestore) */}
-            <div className="mb-space-lg p-space-md bg-surface-container rounded-xl flex flex-wrap items-center justify-between gap-space-md shadow-sm" id="critical-drawer">
+            {/* SEGMENTOS PRIORITARIOS (Interactivos con Firestore) - Solo para Admin/Soporte */}
+            {currentUser?.rol !== 'Empleado' && (
+              <div className="mb-space-lg p-space-md bg-surface-container rounded-xl flex flex-wrap items-center justify-between gap-space-md shadow-sm" id="critical-drawer">
               <div className="flex items-center gap-space-md flex-wrap">
                 <span className="flex items-center gap-1 text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
                   <span className="material-symbols-outlined text-[16px]">emergency</span> Segmentos Prioritarios:
@@ -1039,7 +962,8 @@ export default function Inventario() {
                 </button>
               </div>
               <span className="font-label-sm text-label-sm text-outline italic">Sincronizado en tiempo real con Firestore</span>
-            </div>
+              </div>
+            )}
 
             {/* BARRA DE ACCIÓN POR LOTE (Si hay seleccionados) */}
             {selectedIds.length > 0 && (
@@ -1121,27 +1045,31 @@ export default function Inventario() {
                         <td colSpan="9" className="text-center py-16 bg-surface-container-low/30">
                           <div className="flex flex-col items-center justify-center gap-3 max-w-md mx-auto">
                             <span className="material-symbols-outlined text-[48px] text-outline">devices_off</span>
-                            <p className="font-bold text-label-lg text-on-surface">No hay equipos registrados en la base de datos</p>
-                            <p className="text-outline text-body-sm">
-                              Puedes registrar tu primer equipo individualmente o cargar los datos de prueba iniciales para validar el sistema.
+                            <p className="font-bold text-label-lg text-on-surface">
+                              {currentUser?.rol === 'Empleado' ? 'No tienes equipos asignados' : 'No hay equipos registrados en la base de datos'}
                             </p>
-                            <div className="flex items-center gap-3 mt-2">
-                              <button
-                                onClick={handleSeedDemoData}
-                                disabled={isProcessing}
-                                className="px-space-lg py-2 bg-secondary text-on-secondary rounded-lg font-label-md font-semibold hover:bg-secondary/90 transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-                                Cargar 5 Activos Demo CASALIMPIA
-                              </button>
-                              <button
-                                onClick={() => navigate('/registrar-equipo')}
-                                className="px-space-lg py-2 bg-primary text-on-primary rounded-lg font-label-md font-semibold hover:bg-primary-container transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">add</span>
-                                Registrar Manualmente
-                              </button>
-                            </div>
+                            <p className="text-outline text-body-sm">
+                              {currentUser?.rol === 'Empleado' ? 'En este momento no cuentas con ningún activo tecnológico bajo tu custodia.' : 'Puedes registrar tu primer equipo individualmente o cargar los datos de prueba iniciales para validar el sistema.'}
+                            </p>
+                            {currentUser?.rol !== 'Empleado' && (
+                              <div className="flex items-center gap-3 mt-2">
+                                <button
+                                  onClick={handleSeedDemoData}
+                                  disabled={isProcessing}
+                                  className="px-space-lg py-2 bg-secondary text-on-secondary rounded-lg font-label-md font-semibold hover:bg-secondary/90 transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                                  Cargar 5 Activos Demo CASALIMPIA
+                                </button>
+                                <button
+                                  onClick={() => navigate('/registrar-equipo')}
+                                  className="px-space-lg py-2 bg-primary text-on-primary rounded-lg font-label-md font-semibold hover:bg-primary-container transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
+                                >
+                                  <span className="material-symbols-outlined text-[18px]">add</span>
+                                  Registrar Manualmente
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1628,27 +1556,41 @@ export default function Inventario() {
                     <span className="material-symbols-outlined text-[16px]">history</span>
                     Historial de Custodia (Bitácora)
                   </label>
-                  {!selectedAssetForDetail.historial_movimientos?.length ? (
-                    <div className="text-body-sm px-3 py-4 bg-surface-container-low rounded-lg text-outline italic">No hay registros de movimientos en la bitácora.</div>
-                  ) : (
-                    <div className="space-y-2 mt-2">
-                      {[...selectedAssetForDetail.historial_movimientos].reverse().map((mov, idx) => (
-                        <div key={idx} className="p-3 bg-surface-container-lowest rounded-lg flex flex-col gap-1 border border-surface-container hover:border-primary/50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-label-sm text-on-surface flex items-center gap-1">
-                              <div className={`w-2 h-2 rounded-full ${mov.tipo.includes('DEVOLUCIÓN') ? 'bg-error' : mov.tipo.includes('ASIGNACIÓN') ? 'bg-primary' : 'bg-secondary'}`}></div>
-                              {mov.tipo}
-                            </span>
-                            <span className="text-[11px] text-outline font-code-mono">
-                              {new Date(mov.fecha).toLocaleString('es-CO')}
-                            </span>
-                          </div>
-                          <p className="text-body-sm text-on-surface-variant leading-tight">{mov.descripcion}</p>
-                          <span className="text-[10px] text-outline font-bold uppercase mt-1">Soporte/Responsable TI: <span className="text-primary">{mov.responsable}</span></span>
+                  <div className="space-y-2 mt-2">
+                    {/* Render actual movements */}
+                    {selectedAssetForDetail.historial_movimientos && [...selectedAssetForDetail.historial_movimientos].reverse().map((mov, idx) => (
+                      <div key={idx} className="p-3 bg-surface-container-lowest rounded-lg flex flex-col gap-1 border border-surface-container hover:border-primary/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-label-sm text-on-surface flex items-center gap-1">
+                            <div className={`w-2 h-2 rounded-full ${mov.tipo?.includes('DEVOLUCIÓN') ? 'bg-error' : mov.tipo?.includes('ASIGNACIÓN') ? 'bg-primary' : 'bg-secondary'}`}></div>
+                            {mov.tipo}
+                          </span>
+                          <span className="text-[11px] text-outline font-code-mono">
+                            {new Date(mov.fecha).toLocaleString('es-CO')}
+                          </span>
                         </div>
-                      ))}
+                        <p className="text-body-sm text-on-surface-variant leading-tight">{mov.descripcion}</p>
+                        <span className="text-[10px] text-outline font-bold uppercase mt-1">Soporte/Responsable TI: <span className="text-primary">{mov.responsable}</span></span>
+                      </div>
+                    ))}
+
+                    {/* ALWAYS render ALTA at the bottom (oldest) */}
+                    <div className="p-3 bg-surface-container-lowest rounded-lg flex flex-col gap-1 border border-surface-container hover:border-primary/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-label-sm text-on-surface flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-success"></div>
+                          ALTA DE SISTEMA (RF-02)
+                        </span>
+                        <span className="text-[11px] text-outline font-code-mono">
+                          {new Date(selectedAssetForDetail.createdAt?.seconds ? selectedAssetForDetail.createdAt.seconds * 1000 : selectedAssetForDetail.createdAt || Date.now()).toLocaleString('es-CO')}
+                        </span>
+                      </div>
+                      <p className="text-body-sm text-on-surface-variant leading-tight">Ingreso inicial del equipo al inventario institucional.</p>
+                      <span className="text-[10px] text-outline font-bold uppercase mt-1">
+                        Soporte/Responsable TI: <span className="text-primary">{selectedAssetForDetail.registrado_por?.nombre || 'Administrador TI'}</span>
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
