@@ -597,26 +597,6 @@ export default function Inventario() {
               <div className="flex flex-wrap items-center gap-space-sm shrink-0">
                 {currentUser?.rol !== 'Empleado' && (
                   <button
-                    onClick={() => setShowImportModal(true)}
-                    className="flex items-center gap-space-xs px-space-md h-9 bg-surface-container-lowest text-on-surface rounded-lg font-label-md text-label-md shadow-sm hover:bg-surface-container-high transition-colors cursor-pointer"
-                    id="btn-import-lot"
-                    type="button"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-primary">upload_file</span>
-                    <span>Importar Lote (CSV/XLSX)</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => exportToCSV(filteredEquipos.length > 0 ? filteredEquipos : equipos, 'reporte_activos_rf08.csv')}
-                  className="flex items-center gap-space-xs px-space-md h-9 bg-surface-container-lowest text-on-surface rounded-lg font-label-md text-label-md shadow-sm hover:bg-surface-container-high transition-colors cursor-pointer"
-                  id="btn-export-rep"
-                  type="button"
-                >
-                  <span className="material-symbols-outlined text-[18px] text-secondary">table_chart</span>
-                  <span>Exportar Reporte (RF-08)</span>
-                </button>
-                {currentUser?.rol !== 'Empleado' && (
-                  <button
                     onClick={() => navigate('/registrar-equipo')}
                     className="flex items-center gap-space-xs px-space-lg h-9 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-sm hover:bg-primary-container transition-all cursor-pointer"
                     id="btn-register-asset"
