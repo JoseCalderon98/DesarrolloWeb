@@ -56,15 +56,29 @@ export default function Dashboard() {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
+    const parseEqDate = (eq) => {
+      if (eq.createdAt?.seconds) return new Date(eq.createdAt.seconds * 1000);
+      if (eq.fecha_registro) {
+        const d = new Date(eq.fecha_registro);
+        if (!isNaN(d.getTime())) return d;
+      }
+      return null;
+    };
+
+    const altasMes = equipos.filter(eq => {
+      const d = parseEqDate(eq);
+      return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+
     const movsMesActual = movimientos.filter(m => {
-      const date = new Date(m.fecha);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      const date = new Date(m.fecha?.seconds ? m.fecha.seconds * 1000 : m.fecha_registro || m.fecha);
+      return !isNaN(date.getTime()) && date.getMonth() === currentMonth && date.getFullYear() === currentYear;
     });
 
     const entregasMes = movsMesActual.filter(m => m.tipo === 'ENTREGA').length;
     const devolucionesMes = movsMesActual.filter(m => m.tipo === 'DEVOLUCIÓN').length;
 
-    return { total, asignados, disponibles, mantenimiento, bajas, entregasMes, devolucionesMes };
+    return { total, asignados, disponibles, mantenimiento, bajas, entregasMes, devolucionesMes, altasMes };
   }, [equipos, movimientos]);
 
   if (loading) {
@@ -130,7 +144,13 @@ export default function Dashboard() {
                   <span className="material-symbols-outlined text-[28px]">devices</span>
                 </div>
               </div>
-              <div className="w-full bg-surface-container-high h-2 rounded-full mt-4 overflow-hidden shadow-inner">
+              <div className="flex items-center justify-between text-xs font-bold text-on-surface-variant mt-2 z-10">
+                <span className="text-primary flex items-center gap-1 font-semibold">
+                  <span className="material-symbols-outlined text-[15px]">trending_up</span>
+                  {kpis.altasMes} altas este mes
+                </span>
+              </div>
+              <div className="w-full bg-surface-container-high h-2 rounded-full mt-2 overflow-hidden shadow-inner">
                 <div className="bg-gradient-to-r from-primary to-primary-container h-full rounded-full" style={{ width: '100%' }}></div>
               </div>
             </div>

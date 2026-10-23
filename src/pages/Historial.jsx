@@ -107,13 +107,13 @@ export default function Historial() {
         _id: `alta-${eq.id}`,
         tipo: 'ALTA',
         acta_numero: 'N/A',
-        fecha: parseDate(eq.createdAt),
+        fecha: parseDate(eq.fecha_registro || eq.createdAt),
         placa: eq.placa || 'N/A',
         equipo_nombre: eq.equipo_nombre || 'N/A',
         serial: eq.serial || 'N/A',
         colaborador: eq.asignatario || eq.ubicacion || 'Bodega',
         responsable_ti: eq.registrado_por?.nombre || 'Administrador TI',
-        detalles: 'Alta inicial de activo institucional',
+        detalles: 'Alta inicial de activo institucional (RF-02)',
         rawDoc: eq,
         cert_hash: 'N/A'
       });
@@ -167,7 +167,7 @@ export default function Historial() {
         _id: mov.id,
         tipo: tipoMov,
         acta_numero: 'N/A',
-        fecha: parseDate(mov.createdAt || mov.fecha),
+        fecha: parseDate(mov.fecha_registro || mov.createdAt || mov.fecha),
         placa: mov.placa || 'N/A',
         equipo_nombre: mov.equipo_nombre || 'N/A',
         serial: mov.serial || 'N/A',
@@ -180,7 +180,7 @@ export default function Historial() {
     });
 
     return combined;
-  }, [actasEntrega, actasDevolucion, movimientosGenerales]);
+  }, [equipos, actasEntrega, actasDevolucion, movimientosGenerales]);
 
   // Filtrado y Ordenación
   const filteredAndSortedMovements = useMemo(() => {
@@ -243,6 +243,15 @@ export default function Historial() {
   // Paginación
   const totalPages = Math.ceil(filteredAndSortedMovements.length / itemsPerPage);
   const currentMovements = filteredAndSortedMovements.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Métricas de auditoría calculadas
+  const metricasAuditoria = useMemo(() => {
+    const total = filteredAndSortedMovements.length;
+    const altas = filteredAndSortedMovements.filter(m => m.tipo === 'ALTA').length;
+    const entregas = filteredAndSortedMovements.filter(m => m.tipo === 'ENTREGA').length;
+    const devoluciones = filteredAndSortedMovements.filter(m => m.tipo === 'DEVOLUCIÓN').length;
+    return { total, altas, entregas, devoluciones };
+  }, [filteredAndSortedMovements]);
 
   const requestSort = (key) => {
     let direction = 'asc';
@@ -311,6 +320,49 @@ export default function Historial() {
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 mt-16 p-space-xl overflow-y-auto">
           
+          {/* TARJETAS DE MÉTRICAS DE AUDITORÍA */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-space-md mb-space-lg">
+            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+              <div>
+                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Registros Filtrados</span>
+                <span className="font-display-lg text-2xl font-bold text-on-surface">{metricasAuditoria.total}</span>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined text-[22px]">analytics</span>
+              </div>
+            </div>
+
+            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+              <div>
+                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Altas de Hardware</span>
+                <span className="font-display-lg text-2xl font-bold text-success">{metricasAuditoria.altas}</span>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center text-success">
+                <span className="material-symbols-outlined text-[22px]">add_circle</span>
+              </div>
+            </div>
+
+            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+              <div>
+                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Entregas / Actas</span>
+                <span className="font-display-lg text-2xl font-bold text-secondary">{metricasAuditoria.entregas}</span>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                <span className="material-symbols-outlined text-[22px]">assignment_turned_in</span>
+              </div>
+            </div>
+
+            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+              <div>
+                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Devoluciones</span>
+                <span className="font-display-lg text-2xl font-bold text-error">{metricasAuditoria.devoluciones}</span>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center text-error">
+                <span className="material-symbols-outlined text-[22px]">keyboard_return</span>
+              </div>
+            </div>
+          </div>
+
           {/* PANEL DE FILTROS AVANZADOS */}
           <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 mb-space-lg">
             <div className="flex items-center gap-space-sm mb-space-md">

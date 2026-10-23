@@ -158,6 +158,11 @@ export default function RegistrarEquipo() {
   const runBatchedImport = async (assets) => {
     const chunkSize = 400;
 
+    const now = new Date();
+    const fechaRegistroISO = now.toISOString();
+    const fechaRegistroTexto = now.toLocaleString('es-CO');
+    const fechaRegistroCorta = now.toISOString().split('T')[0];
+
     for (let i = 0; i < assets.length; i += chunkSize) {
       const chunk = assets.slice(i, i + chunkSize);
       const batch = writeBatch(db);
@@ -166,12 +171,29 @@ export default function RegistrarEquipo() {
         const ref = doc(collection(db, 'equipos'));
         batch.set(ref, {
           ...asset,
+          fecha_registro: fechaRegistroISO,
+          fecha_registro_corta: fechaRegistroCorta,
+          fecha_registro_texto: fechaRegistroTexto,
           registrado_por: {
             id: currentUser?.id || 'N/A',
             nombre: currentUser?.nombre || 'Administrador TI',
             email: currentUser?.email || 'N/A'
           },
           createdAt: serverTimestamp()
+        });
+
+        const movRef = doc(collection(db, 'movimientos'));
+        batch.set(movRef, {
+          tipo: 'ALTA',
+          fecha: serverTimestamp(),
+          fecha_registro: fechaRegistroISO,
+          fecha_registro_texto: fechaRegistroTexto,
+          placa: asset.placa,
+          equipo_nombre: asset.equipo_nombre,
+          serial: asset.serial,
+          descripcion: 'Alta por importación de lote institucional (RF-02)',
+          responsable: currentUser?.nombre || 'Administrador TI',
+          colaborador_nombre: asset.asignatario || 'Bodega Centralizada TI'
         });
       });
 
@@ -201,6 +223,16 @@ export default function RegistrarEquipo() {
       const snapshot = await getDocs(collection(db, 'equipos'));
       const rows = snapshot.docs.map((item) => {
         const data = item.data();
+        const formatFecha = () => {
+          if (data.fecha_registro_texto) return data.fecha_registro_texto;
+          if (data.fecha_registro) {
+            try { return new Date(data.fecha_registro).toLocaleString('es-CO'); } catch { return data.fecha_registro; }
+          }
+          if (data.createdAt?.seconds) {
+            return new Date(data.createdAt.seconds * 1000).toLocaleString('es-CO');
+          }
+          return 'Sin registrar';
+        };
         return {
           placa: data.placa || '',
           serial: data.serial || '',
@@ -210,6 +242,7 @@ export default function RegistrarEquipo() {
           estado: data.estado || '',
           ubicacion: data.ubicacion || '',
           asignatario: data.asignatario || '',
+          fecha_registro: formatFecha(),
           ultimo_movimiento: data.ultimo_movimiento || '',
           registrado_por: data.registrado_por?.nombre || ''
         };
@@ -300,6 +333,11 @@ export default function RegistrarEquipo() {
     setErrorMsg('');
     setSuccessMsg('');
     try {
+      const now = new Date();
+      const fechaRegistroISO = now.toISOString();
+      const fechaRegistroTexto = now.toLocaleString('es-CO');
+      const fechaRegistroCorta = now.toISOString().split('T')[0];
+
       await addDoc(collection(db, 'equipos'), {
         placa,
         equipo_nombre: equipoNombre,
@@ -310,12 +348,29 @@ export default function RegistrarEquipo() {
         asignatario: 'Bodega Centralizada TI',
         ubicacion,
         ultimo_movimiento: 'Alta Sistema RF-02',
+        fecha_registro: fechaRegistroISO,
+        fecha_registro_corta: fechaRegistroCorta,
+        fecha_registro_texto: fechaRegistroTexto,
         registrado_por: {
           id: currentUser?.id || 'N/A',
           nombre: currentUser?.nombre || 'Administrador TI',
           email: currentUser?.email || 'N/A'
         },
         createdAt: serverTimestamp()
+      });
+
+      // Auditoría global de trazabilidad interna
+      await addDoc(collection(db, 'movimientos'), {
+        tipo: 'ALTA',
+        fecha: serverTimestamp(),
+        fecha_registro: fechaRegistroISO,
+        fecha_registro_texto: fechaRegistroTexto,
+        placa,
+        equipo_nombre: equipoNombre,
+        serial,
+        descripcion: 'Alta inicial de activo institucional (RF-02)',
+        responsable: currentUser?.nombre || 'Administrador TI',
+        colaborador_nombre: 'Bodega Centralizada TI'
       });
 
       localStorage.setItem(LAST_HARDWARE_KEY, JSON.stringify({
@@ -558,6 +613,7 @@ export default function RegistrarEquipo() {
                   <table className="w-full min-w-[720px] text-left border-separate border-spacing-y-2">
                     <thead>
                       <tr className="text-outline text-label-sm uppercase">
+                        <th className="py-2 px-3">Fecha de Registro</th>
                         <th className="py-2 px-3">Placa</th>
                         <th className="py-2 px-3">Serial</th>
                         <th className="py-2 px-3">Modelo</th>
@@ -569,7 +625,10 @@ export default function RegistrarEquipo() {
                     <tbody>
                       {historyItems.map((item) => (
                         <tr key={item.id} className="bg-surface-container-low rounded-lg text-on-surface">
-                          <td className="py-2 px-3 font-label-sm">{item.placa || 'N/A'}</td>
+                          <td className="py-2 px-3 font-code-mono text-xs text-primary font-semibold">
+                            {item.fecha_registro_texto || (item.createdAt?.seconds ? new Date(item.createdAt.seconds * 1000).toLocaleString('es-CO') : (item.fecha_registro ? new Date(item.fecha_registro).toLocaleString('es-CO') : 'Reciente'))}
+                          </td>
+                          <td className="py-2 px-3 font-label-sm font-bold">{item.placa || 'N/A'}</td>
                           <td className="py-2 px-3 font-body-sm">{item.serial || 'N/A'}</td>
                           <td className="py-2 px-3 font-body-sm">{item.equipo_nombre || 'N/A'}</td>
                           <td className="py-2 px-3 font-body-sm">{item.estado || 'N/A'}</td>
