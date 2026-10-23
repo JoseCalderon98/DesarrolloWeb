@@ -20,8 +20,24 @@ export function exportToCSV(equipos, filename = 'inventario_activos_casalimpia.c
     'Estado',
     'Asignatario',
     'Ubicacion',
+    'Fecha de Registro',
     'Ultimo Movimiento'
   ];
+
+  const formatFecha = (e) => {
+    if (e.fecha_registro_texto) return e.fecha_registro_texto;
+    if (e.fecha_registro) {
+      try {
+        return new Date(e.fecha_registro).toLocaleString('es-CO');
+      } catch {
+        return String(e.fecha_registro);
+      }
+    }
+    if (e.createdAt?.seconds) {
+      return new Date(e.createdAt.seconds * 1000).toLocaleString('es-CO');
+    }
+    return 'Sin registrar';
+  };
 
   const rows = equipos.map(e => [
     e.placa || '',
@@ -32,6 +48,7 @@ export function exportToCSV(equipos, filename = 'inventario_activos_casalimpia.c
     e.estado || '',
     e.asignatario || '',
     e.ubicacion || '',
+    formatFecha(e),
     e.ultimo_movimiento || ''
   ]);
 

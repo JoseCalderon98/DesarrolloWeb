@@ -33,6 +33,7 @@ export default function Inventario() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterLocation, setFilterLocation] = useState('all');
+  const [filterRecent, setFilterRecent] = useState(false);
 
   // Selección múltiple
   const [selectedIds, setSelectedIds] = useState([]);
@@ -150,6 +151,17 @@ export default function Inventario() {
     return () => unsubHist();
   }, [authReady, selectedAssetForDetail]);
 
+  // Helper para extraer fecha válida de registro
+  const parseAssetDate = (eq) => {
+    if (!eq) return null;
+    if (eq.createdAt?.seconds) return new Date(eq.createdAt.seconds * 1000);
+    if (eq.fecha_registro) {
+      const d = new Date(eq.fecha_registro);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return null;
+  };
+
   // 2. Cálculos de KPIs dinámicos
   const totalEquipos = equipos.length;
   const disponibles = equipos.filter(e => e.estado === 'DISPONIBLE').length;
@@ -158,6 +170,17 @@ export default function Inventario() {
   const bajas = equipos.filter(e => e.estado === 'BAJA').length;
   const tasaOperativa = totalEquipos === 0 ? 0 : Math.round(((disponibles + asignados) / totalEquipos) * 100);
   
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  // Métrica: Activos dados de alta/registrados este mes
+  const registradosMes = useMemo(() => {
+    return equipos.filter(eq => {
+      const d = parseAssetDate(eq);
+      return d && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+  }, [equipos, currentMonth, currentYear]);
+
   const pendingNovedadesCount = novedadesTI.filter(n => n.estado === 'PENDIENTE TI').length;
 
   // Segmentos prioritarios dinámicos
@@ -206,9 +229,17 @@ export default function Inventario() {
         if (!itemLoc.includes(filterLocation.toLowerCase())) return false;
       }
 
+      // Filtro por activos nuevos ingresados este mes
+      if (filterRecent) {
+        const d = parseAssetDate(item);
+        if (!d || d.getMonth() !== currentMonth || d.getFullYear() !== currentYear) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [equipos, searchQuery, filterCategory, filterStatus, filterLocation]);
+  }, [equipos, searchQuery, filterCategory, filterStatus, filterLocation, filterRecent, currentMonth, currentYear]);
 
   // 4. Paginación
   const totalPages = Math.max(1, Math.ceil(filteredEquipos.length / itemsPerPage));
@@ -230,6 +261,7 @@ export default function Inventario() {
     setFilterCategory('all');
     setFilterStatus('all');
     setFilterLocation('all');
+    setFilterRecent(false);
     setCurrentPage(1);
   };
 
@@ -428,10 +460,14 @@ export default function Inventario() {
     try {
       setIsProcessing(true);
       const batch = writeBatch(db);
+      const now = new Date();
       initialDemoAssets.forEach((asset) => {
         const newDocRef = doc(collection(db, "equipos"));
         batch.set(newDocRef, {
           ...asset,
+          fecha_registro: now.toISOString(),
+          fecha_registro_corta: now.toISOString().split('T')[0],
+          fecha_registro_texto: now.toLocaleString('es-CO'),
           createdAt: serverTimestamp()
         });
       });
@@ -469,10 +505,14 @@ export default function Inventario() {
     try {
       setIsProcessing(true);
       const batch = writeBatch(db);
+      const now = new Date();
       parsedImportAssets.forEach((asset) => {
         const newDocRef = doc(collection(db, "equipos"));
         batch.set(newDocRef, {
           ...asset,
+          fecha_registro: now.toISOString(),
+          fecha_registro_corta: now.toISOString().split('T')[0],
+          fecha_registro_texto: now.toLocaleString('es-CO'),
           createdAt: serverTimestamp()
         });
       });
@@ -656,6 +696,12 @@ export default function Inventario() {
                 <div className="flex items-baseline gap-space-sm mb-space-xs">
                   <span className="font-display-lg text-display-lg text-on-surface font-bold">{totalEquipos}</span>
                   <span className="font-label-sm text-label-sm text-outline font-code-mono">Uds.</span>
+                  {registradosMes > 0 && (
+                    <span className="ml-auto inline-flex items-center gap-1 bg-primary/10 text-primary font-bold text-[11px] px-2 py-0.5 rounded-full" title="Nuevos activos dados de alta este mes">
+                      <span className="material-symbols-outlined text-[12px]">trending_up</span>
+                      +{registradosMes} este mes
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center justify-between pt-space-xs">
                   <div className="flex items-center gap-space-xs font-label-sm text-label-sm text-primary font-semibold">
@@ -892,7 +938,14 @@ export default function Inventario() {
                     </span>
                   )}
 
-                  {searchQuery === '' && filterCategory === 'all' && filterStatus === 'all' && filterLocation === 'all' && (
+                  {filterRecent && (
+                    <span className="inline-flex items-center gap-1 bg-primary text-on-primary px-2 py-0.5 rounded-full font-code-mono text-[11px] font-bold">
+                      Registrados este Mes ({registradosMes})
+                      <span onClick={() => setFilterRecent(false)} className="material-symbols-outlined text-[12px] cursor-pointer hover:text-on-primary/80">close</span>
+                    </span>
+                  )}
+
+                  {searchQuery === '' && filterCategory === 'all' && filterStatus === 'all' && filterLocation === 'all' && !filterRecent && (
                     <span className="text-outline text-[12px] italic">Ningún filtro activo (Mostrando todos los registros)</span>
                   )}
                 </div>
@@ -912,6 +965,15 @@ export default function Inventario() {
                 <span className="flex items-center gap-1 text-primary font-label-sm text-label-sm font-bold uppercase tracking-wider">
                   <span className="material-symbols-outlined text-[16px]">emergency</span> Segmentos Prioritarios:
                 </span>
+
+                <button
+                  onClick={() => setFilterRecent(prev => !prev)}
+                  className={`px-space-md py-1 rounded-full text-on-surface font-label-sm text-label-sm transition-colors shadow-sm flex items-center gap-1 cursor-pointer ${filterRecent ? 'bg-primary text-on-primary font-bold ring-1 ring-primary' : 'bg-surface-container-lowest hover:bg-primary/20'
+                    }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  Nuevos Registrados este Mes ({registradosMes})
+                </button>
 
                 <button
                   onClick={() => setFilterStatus(filterStatus === 'MANTENIMIENTO' ? 'all' : 'MANTENIMIENTO')}
@@ -995,6 +1057,7 @@ export default function Inventario() {
                       <th className="py-space-md px-space-md font-bold">Categoría</th>
                       <th className="py-space-md px-space-md font-bold">Estado</th>
                       <th className="py-space-md px-space-lg font-bold">Asignatario / Ubicación</th>
+                      <th className="py-space-md px-space-md font-bold">Fecha Registro</th>
                       <th className="py-space-md px-space-md font-bold">Último Movimiento</th>
                       <th className="py-space-md px-space-md text-right font-bold pr-space-lg">Acciones</th>
                     </tr>
@@ -1002,7 +1065,7 @@ export default function Inventario() {
                   <tbody className="divide-y-0 font-body-sm text-body-sm text-on-surface">
                     {errorMsg ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-12 bg-error-container text-on-error-container">
+                        <td colSpan="10" className="text-center py-12 bg-error-container text-on-error-container">
                           <div className="flex flex-col items-center gap-2 max-w-lg mx-auto">
                             <span className="material-symbols-outlined text-[32px] text-error">lock</span>
                             <p className="font-bold text-label-lg">Error de Permisos en Firestore</p>
@@ -1013,7 +1076,7 @@ export default function Inventario() {
                       </tr>
                     ) : loading ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-16">
+                        <td colSpan="10" className="text-center py-16">
                           <div className="flex flex-col items-center justify-center gap-3">
                             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                             <span className="text-outline font-semibold">Cargando inventario desde Firebase...</span>
@@ -1022,7 +1085,7 @@ export default function Inventario() {
                       </tr>
                     ) : equipos.length === 0 ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-16 bg-surface-container-low/30">
+                        <td colSpan="10" className="text-center py-16 bg-surface-container-low/30">
                           <div className="flex flex-col items-center justify-center gap-3 max-w-md mx-auto">
                             <span className="material-symbols-outlined text-[48px] text-outline">devices_off</span>
                             <p className="font-bold text-label-lg text-on-surface">
@@ -1055,7 +1118,7 @@ export default function Inventario() {
                       </tr>
                     ) : filteredEquipos.length === 0 ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-12 bg-surface-container-low/20">
+                        <td colSpan="10" className="text-center py-12 bg-surface-container-low/20">
                           <div className="flex flex-col items-center justify-center gap-2">
                             <span className="material-symbols-outlined text-[36px] text-outline">search_off</span>
                             <p className="font-bold text-on-surface">No se encontraron equipos con los filtros aplicados</p>
@@ -1140,6 +1203,18 @@ export default function Inventario() {
                                   }`}>
                                   {equipo.ubicacion || 'Bodega Principal'}
                                 </span>
+                              </div>
+                            </td>
+                            <td className="py-space-md px-space-md">
+                              <div className="flex flex-col">
+                                <span className="font-code-mono text-xs text-on-surface font-medium">
+                                  {equipo.fecha_registro_texto || (equipo.createdAt?.seconds ? new Date(equipo.createdAt.seconds * 1000).toLocaleDateString('es-CO') : (equipo.fecha_registro ? new Date(equipo.fecha_registro).toLocaleDateString('es-CO') : 'Reciente'))}
+                                </span>
+                                {equipo.registrado_por?.nombre && (
+                                  <span className="text-[10px] text-outline truncate max-w-[120px]" title={`Registrado por: ${equipo.registrado_por.nombre}`}>
+                                    Por: {equipo.registrado_por.nombre}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="py-space-md px-space-md">
