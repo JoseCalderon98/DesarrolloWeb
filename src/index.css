@@ -44,7 +44,8 @@
   }
 
   /* Desactivar padding del sidebar */
-  .pl-72 {
+  .pl-72,
+  .lg\:pl-72 {
     padding-left: 0 !important;
   }
 
