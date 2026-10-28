@@ -77,6 +77,28 @@ export const initialPPIMembers = [
     sede: 'Bogotá - Av. El Dorado',
     estado: 'ACTIVO',
     avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBGsQE4UpuHooVIQ04f_YXJzXSdny24c9qcuPr1cMP7E4D0fr4H3zy4UOsHO9xZEClCFY1bkk-g_Xpzvn8G3xYhBX7yHYVnzEWjWnGQtd9Eoum0fT7tscs2fRHPj-v0WtIi5uGGU25yihacJ_e5Iv0qXvC7l8NaVI7cnqtD-6vDgu2_3qjKc0QBBw9K8bc3vR_ht51hHYqSMbBUb2y9PlxaMsdkLoFSV8BpGGaugbqPrjso00WxNqWonQ'
+  },
+  {
+    nombre: 'Carlos Mario Restrepo V.',
+    cedula: '1.045.712.900',
+    email: 'carlos.restrepo@casalimpia.com.co',
+    rol: 'Soporte TI',
+    cargo: 'Líder de Soporte TI Regional Costa',
+    area: 'Soporte Técnico Regional',
+    sede: 'Barranquilla - Prado Norte',
+    estado: 'ACTIVO',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
+  },
+  {
+    nombre: 'Paola Andrea Gómez L.',
+    cedula: '1.088.341.229',
+    email: 'paola.gomez@casalimpia.com.co',
+    rol: 'Soporte TI',
+    cargo: 'Supervisora de Operaciones TI Eje Cafetero',
+    area: 'Soporte Técnico Regional',
+    sede: 'Pereira - Circunvalar',
+    estado: 'ACTIVO',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
   }
 ];
 

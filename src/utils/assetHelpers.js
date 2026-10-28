@@ -1,6 +1,82 @@
 // Utilidades para exportación, importación y datos demo del Inventario SGI CASALIMPIA
 
 /**
+ * Formatea un valor numérico a moneda colombiana (COP)
+ * @param {number|string} amount
+ * @returns {string} Ejemplo: "$ 3.500.000"
+ */
+export function formatCurrencyCOP(amount) {
+  const num = Number(amount) || 0;
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0
+  }).format(num);
+}
+
+/**
+ * Retorna un valor comercial de referencia según la categoría si el activo no tiene valor declarado
+ * @param {string} categoria
+ * @returns {number}
+ */
+export function getEstimatedPriceByCategory(categoria = '') {
+  const cat = String(categoria).toLowerCase();
+  if (cat.includes('laptop') || cat.includes('portátil')) return 3500000;
+  if (cat.includes('escritorio') || cat.includes('desktop') || cat.includes('prodesk')) return 2800000;
+  if (cat.includes('servidor') || cat.includes('rack')) return 12500000;
+  if (cat.includes('monitor') || cat.includes('display')) return 780000;
+  if (cat.includes('impresora') || cat.includes('scanner')) return 1200000;
+  if (cat.includes('red') || cat.includes('switch') || cat.includes('router')) return 1800000;
+  return 2500000;
+}
+
+/**
+ * Calcula la depreciación contable en línea recta de un activo institucional
+ * @param {Object} asset
+ * @returns {Object} { valorDeclarado, isEstimated, vidaUtilMeses, mesesUso, porcentajeDepreciado, depreciacionAcumulada, valorResidual, estaDepreciadoTotalmente }
+ */
+export function calculateDepreciation(asset = {}) {
+  const hasDeclaredValue = asset.valor_declarado !== undefined && asset.valor_declarado !== null && asset.valor_declarado !== '' && Number(asset.valor_declarado) > 0;
+  const valorDeclarado = hasDeclaredValue ? Number(asset.valor_declarado) : getEstimatedPriceByCategory(asset.categoria);
+  const isEstimated = !hasDeclaredValue;
+  const vidaUtilMeses = Number(asset.vida_util_meses) || 36; // 36 meses = 3 años estándar contable TI
+
+  // Fecha de registro
+  let registrationDate = null;
+  if (asset.fecha_registro) {
+    const parsed = new Date(asset.fecha_registro);
+    if (!isNaN(parsed.getTime())) registrationDate = parsed;
+  }
+  if (!registrationDate && asset.createdAt?.seconds) {
+    registrationDate = new Date(asset.createdAt.seconds * 1000);
+  }
+  if (!registrationDate) {
+    registrationDate = new Date(); // Asumir hoy si no tiene fecha
+  }
+
+  const now = new Date();
+  const diffTime = Math.max(0, now.getTime() - registrationDate.getTime());
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  const mesesUso = Math.max(0, +(diffDays / 30.44).toFixed(1));
+
+  const porcentajeDepreciado = Math.min(100, Math.max(0, +((mesesUso / vidaUtilMeses) * 100).toFixed(1)));
+  const depreciacionAcumulada = Math.round((valorDeclarado * porcentajeDepreciado) / 100);
+  const valorResidual = Math.max(0, valorDeclarado - depreciacionAcumulada);
+  const estaDepreciadoTotalmente = porcentajeDepreciado >= 100;
+
+  return {
+    valorDeclarado,
+    isEstimated,
+    vidaUtilMeses,
+    mesesUso,
+    porcentajeDepreciado,
+    depreciacionAcumulada,
+    valorResidual,
+    estaDepreciadoTotalmente
+  };
+}
+
+/**
  * Exporta la lista de activos a un archivo CSV compatible con Microsoft Excel
  * @param {Array} equipos Lista de objetos de equipos
  * @param {string} filename Nombre del archivo a descargar
@@ -20,6 +96,9 @@ export function exportToCSV(equipos, filename = 'inventario_activos_casalimpia.c
     'Estado',
     'Asignatario',
     'Ubicacion',
+    'Valor Declarado (COP)',
+    'Depreciacion Acumulada (COP)',
+    'Valor Residual en Libros (COP)',
     'Fecha de Registro',
     'Ultimo Movimiento'
   ];
@@ -39,18 +118,24 @@ export function exportToCSV(equipos, filename = 'inventario_activos_casalimpia.c
     return 'Sin registrar';
   };
 
-  const rows = equipos.map(e => [
-    e.placa || '',
-    e.equipo_nombre || '',
-    e.equipo_specs || '',
-    e.serial || '',
-    e.categoria || '',
-    e.estado || '',
-    e.asignatario || '',
-    e.ubicacion || '',
-    formatFecha(e),
-    e.ultimo_movimiento || ''
-  ]);
+  const rows = equipos.map(e => {
+    const dep = calculateDepreciation(e);
+    return [
+      e.placa || '',
+      e.equipo_nombre || '',
+      e.equipo_specs || '',
+      e.serial || '',
+      e.categoria || '',
+      e.estado || '',
+      e.asignatario || '',
+      e.ubicacion || '',
+      dep.valorDeclarado,
+      dep.depreciacionAcumulada,
+      dep.valorResidual,
+      formatFecha(e),
+      e.ultimo_movimiento || ''
+    ];
+  });
 
   const escapeCSV = (field) => {
     const stringField = String(field ?? '');
@@ -111,6 +196,7 @@ export function parseCSV(csvText) {
     row.push(entry.trim());
 
     if (row.length >= 4) {
+      const parsedValor = Number(String(row[8] || '').replace(/[^0-9]/g, '')) || 0;
       result.push({
         placa: row[0] || `CL-TI-${Math.floor(1000 + Math.random() * 9000)}`,
         equipo_nombre: row[1] || 'Equipo TI',
@@ -119,8 +205,10 @@ export function parseCSV(csvText) {
         categoria: row[4] || 'Laptops Corporativas',
         estado: (row[5] || 'DISPONIBLE').toUpperCase(),
         asignatario: row[6] || 'Bodega Centralizada TI',
-        ubicacion: row[7] || 'Bogotá - Av. El Dorado',
-        ultimo_movimiento: row[8] || 'Importación Lote CSV'
+        ubicacion: row[7] || 'Regional Medellin',
+        valor_declarado: parsedValor > 0 ? parsedValor : 3500000,
+        vida_util_meses: 36,
+        ultimo_movimiento: row[9] || 'Importación Lote CSV'
       });
     }
   }
@@ -140,8 +228,9 @@ export const initialDemoAssets = [
     categoria: 'Estaciones de Escritorio',
     estado: 'DISPONIBLE',
     asignatario: 'Bodega Centralizada TI',
-    ubicacion: 'Rack A1 - Principal',
-    sede: 'Bogotá',
+    ubicacion: 'Regional Bogota',
+    valor_declarado: 2950000,
+    vida_util_meses: 36,
     ultimo_movimiento: 'Alta Sistema RF-02'
   },
   {
@@ -153,8 +242,9 @@ export const initialDemoAssets = [
     estado: 'ASIGNADO',
     asignatario: 'Santiago Jiménez Castro',
     asignatario_email: 'santiago.jimenez@casalimpia.com.co',
-    ubicacion: 'Sede Principal Av. El Dorado',
-    sede: 'Bogotá',
+    ubicacion: 'Regional Bogota',
+    valor_declarado: 4800000,
+    vida_util_meses: 36,
     ultimo_movimiento: 'Entrega Acta #04-2026'
   },
   {
@@ -165,8 +255,9 @@ export const initialDemoAssets = [
     categoria: 'Laptops Corporativas',
     estado: 'DISPONIBLE',
     asignatario: 'Bodega Centralizada TI',
-    ubicacion: 'Rack B2 - Piso 2',
-    sede: 'Medellín',
+    ubicacion: 'Regional Medellin',
+    valor_declarado: 3600000,
+    vida_util_meses: 36,
     ultimo_movimiento: 'Devolución Acta #12'
   },
   {
@@ -176,9 +267,11 @@ export const initialDemoAssets = [
     serial: 'C02G879QMD6R',
     categoria: 'Laptops Corporativas',
     estado: 'MANTENIMIENTO',
+    condicion_fisica: '4/10 Dañado (Requiere Reparación)',
     asignatario: 'Taller Central de Soporte',
-    ubicacion: 'Laboratorio Hardware - Mesa 3',
-    sede: 'Bogotá',
+    ubicacion: 'Regional Bogota',
+    valor_declarado: 8900000,
+    vida_util_meses: 36,
     ultimo_movimiento: 'Novedad: Teclado y Batería'
   },
   {
@@ -189,8 +282,9 @@ export const initialDemoAssets = [
     categoria: 'Servidores y Racks',
     estado: 'ASIGNADO',
     asignatario: 'Infraestructura y Redes',
-    ubicacion: 'Datacenter Principal - Rack 4',
-    sede: 'Bogotá',
+    ubicacion: 'Regional Bogota',
+    valor_declarado: 18500000,
+    vida_util_meses: 60,
     ultimo_movimiento: 'Mantenimiento Preventivo Q1'
   },
   {
@@ -202,8 +296,10 @@ export const initialDemoAssets = [
     estado: 'ASIGNADO',
     asignatario: 'Juan David Gutiérrez Zuleta',
     asignatario_email: 'juan.gutierrez@casalimpia.com.co',
-    ubicacion: 'Bogotá - Av. El Dorado',
-    sede: 'Bogotá',
+    ubicacion: 'Regional Medellin',
+    valor_declarado: 850000,
+    vida_util_meses: 36,
     ultimo_movimiento: 'Entrega Acta #05-2026'
   }
 ];
+

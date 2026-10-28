@@ -1234,6 +1234,16 @@ export default function Inventario() {
                                 >
                                   <span className="material-symbols-outlined text-[18px]">visibility</span>
                                 </button>
+                                {/* Botón Trasladar Regional */}
+                                {currentUser?.rol !== 'Empleado' && (
+                                  <button
+                                    onClick={() => navigate(`/traslados?placa=${equipo.placa}`)}
+                                    className="p-1.5 rounded-md hover:bg-surface-container-high text-secondary hover:text-secondary font-bold transition-colors cursor-pointer"
+                                    title="Trasladar a otra Regional"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">local_shipping</span>
+                                  </button>
+                                )}
                                 {/* Botón Editar */}
                                 {currentUser?.rol !== 'Empleado' && (
                                   <button

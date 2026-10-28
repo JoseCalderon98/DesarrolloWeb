@@ -8,6 +8,7 @@ import RegistroEntrega from './pages/RegistroEntrega'
 import Devoluciones from './pages/Devoluciones'
 import Historial from './pages/Historial'
 import UsuariosRoles from './pages/UsuariosRoles'
+import Traslados from './pages/Traslados'
 import './index.css'
 
 function App() {
@@ -22,7 +23,10 @@ function App() {
           <Route path="/entrega-hardware" element={<RegistroEntrega />} />
           <Route path="/nueva-entrega" element={<RegistroEntrega />} />
           <Route path="/devoluciones" element={<Devoluciones />} />
+          <Route path="/traslados" element={<Traslados />} />
+          <Route path="/traslado-hardware" element={<Traslados />} />
           <Route path="/historial" element={<Historial />} />
+          <Route path="/reportes" element={<Historial />} />
           <Route path="/usuarios-roles" element={<UsuariosRoles />} />
           <Route path="/usuarios" element={<UsuariosRoles />} />
         </Routes>

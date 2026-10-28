@@ -112,6 +112,15 @@ export default function Sidebar() {
                     <span className="font-body-sm text-body-sm">Devoluciones</span>
                   </a>
                 )}
+                {currentUser?.rol !== 'Empleado' && (
+                  <a
+                    className={`flex items-center gap-space-sm px-space-md py-space-xs rounded-lg transition-colors cursor-pointer ${isActive('/traslados') ? 'bg-primary-container text-on-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
+                    onClick={() => navigate('/traslados')}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">local_shipping</span>
+                    <span className="font-body-sm text-body-sm">Traslados Regionales</span>
+                  </a>
+                )}
                 <a
                   className={`flex items-center gap-space-sm px-space-md py-space-xs rounded-lg transition-colors cursor-pointer ${isActive('/historial') ? 'bg-primary-container text-on-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
                   onClick={() => navigate('/historial')}

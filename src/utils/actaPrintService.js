@@ -451,3 +451,188 @@ export function generateAndPrintActa(actaData, tipo = 'ENTREGA') {
 export function downloadActaFile(actaData, tipo = 'ENTREGA') {
   generateAndPrintActa(actaData, tipo);
 }
+
+/**
+ * Servicio de Generación e Impresión Oficial de Remisión y Acta de Traslado Inter-Regional SGI CASALIMPIA
+ * @param {Object} data Datos del traslado
+ */
+export function generateAndPrintActaTraslado(data) {
+  const actaNumero = data.acta_numero || 'TRS-2026-000';
+  const fecha = data.fecha || new Date().toLocaleDateString('es-CO');
+  const certHash = data.cert_hash || 'TRS-CERT-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+
+  const printContent = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>Remisión Oficial de Traslado - ${actaNumero}</title>
+      <style>
+        @page { size: letter; margin: 12mm 15mm 12mm 15mm; }
+        body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.4; color: #1e293b; background: #fff; margin: 0; padding: 0; }
+        .document-wrapper { width: 100%; max-width: 780px; margin: 0 auto; }
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; border: 1.5px solid #00355f; }
+        .header-table td { padding: 8px 12px; vertical-align: middle; }
+        .logo-box { width: 22%; border-right: 1.5px solid #00355f; text-align: center; }
+        .logo-box img { max-width: 140px; height: auto; }
+        .title-box { width: 56%; border-right: 1.5px solid #00355f; text-align: center; }
+        .title-box h1 { font-size: 13px; font-weight: 800; color: #00355f; margin: 0 0 4px 0; text-transform: uppercase; }
+        .title-box h2 { font-size: 10px; font-weight: 600; color: #475569; margin: 0; }
+        .meta-box { width: 22%; font-size: 9px; line-height: 1.3; }
+        .section-header { background: #00355f; color: #ffffff; padding: 5px 10px; font-weight: 700; font-size: 10px; text-transform: uppercase; margin-top: 10px; margin-bottom: 4px; border-radius: 2px; }
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
+        .data-table td, .data-table th { border: 1px solid #cbd5e1; padding: 4px 8px; }
+        .data-table th { background: #f8fafc; font-weight: 700; color: #334155; width: 25%; }
+        .route-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .route-origin { background: #e0f2fe; color: #0369a1; }
+        .route-dest { background: #dcfce7; color: #15803d; }
+        .legal-box { border: 1px solid #e2e8f0; background: #f8fafc; padding: 8px 10px; font-size: 8.5px; color: #475569; text-align: justify; margin-top: 8px; border-left: 3px solid #00355f; }
+        .signatures-table { width: 100%; border-collapse: collapse; margin-top: 16px; margin-bottom: 12px; }
+        .signatures-table td { width: 50%; padding: 0 10px; vertical-align: top; }
+        .sig-container { border: 1px dashed #94a3b8; height: 75px; background: #fafafa; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .sig-line { border-top: 1.5px solid #00355f; padding-top: 4px; margin-top: 4px; text-align: center; }
+        .sig-title { font-weight: 700; font-size: 10px; color: #0f172a; }
+        .sig-sub { font-size: 8.5px; color: #475569; }
+        .footer-note { font-size: 8px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="document-wrapper">
+        <table class="header-table">
+          <tr>
+            <td class="logo-box">
+              <strong style="font-size:16px; color:#00355f; letter-spacing:1px;">CASALIMPIA</strong>
+              <div style="font-size:8px; color:#64748b;">S.A. NIT 860.038.593-1</div>
+            </td>
+            <td class="title-box">
+              <h1>REMISIÓN OFICIAL DE TRASLADO INTER-REGIONAL</h1>
+              <h2>SISTEMA INTEGRADO DE GESTIÓN (SGI) • ACTIVOS DE TECNOLOGÍA</h2>
+            </td>
+            <td class="meta-box">
+              <strong>CÓDIGO:</strong> TI-FO-06<br>
+              <strong>VERSIÓN:</strong> 03 (ISO 27001)<br>
+              <strong>N° REMISIÓN:</strong> ${actaNumero}<br>
+              <strong>FECHA:</strong> ${fecha}
+            </td>
+          </tr>
+        </table>
+
+        <!-- 1. DATOS DEL TRASLADO -->
+        <div class="section-header">1. Ruta y Logística de Despacho</div>
+        <table class="data-table">
+          <tr>
+            <th>Regional Origen:</th>
+            <td><span class="route-badge route-origin">${data.regional_origen || 'Regional Medellin'}</span></td>
+            <th>Regional Destino:</th>
+            <td><span class="route-badge route-dest">${data.regional_destino || 'Regional Bogota'}</span></td>
+          </tr>
+          <tr>
+            <th>Ubicación Específica Destino:</th>
+            <td colspan="3">${data.nueva_ubicacion || 'Bodega Central TI Regional Destino'}</td>
+          </tr>
+          <tr>
+            <th>Empresa de Transporte:</th>
+            <td><strong>${data.empresa_transporte || 'Envío Interno CASALIMPIA'}</strong></td>
+            <th>N° Guía de Transporte:</th>
+            <td><strong style="color:#00355f;">${data.guia_transporte || 'N/A'}</strong></td>
+          </tr>
+          <tr>
+            <th>Motivo de Transferencia:</th>
+            <td colspan="3">${data.motivo || 'Reubicación de activo por necesidades operativas institucionales'}</td>
+          </tr>
+        </table>
+
+        <!-- 2. IDENTIFICACIÓN DEL EQUIPO -->
+        <div class="section-header">2. Identificación del Activo Trasladado</div>
+        <table class="data-table">
+          <tr>
+            <th>Placa / Código Institucional:</th>
+            <td><strong style="font-size:12px; color:#00355f;">${data.placa || '---'}</strong></td>
+            <th>Número Serial:</th>
+            <td><strong style="font-size:11px; font-family:monospace;">${data.serial || '---'}</strong></td>
+          </tr>
+          <tr>
+            <th>Marca y Modelo:</th>
+            <td>${data.equipo_nombre || 'Equipo de Cómputo'}</td>
+            <th>Categoría:</th>
+            <td>${data.categoria || 'Portátiles Corporativos'}</td>
+          </tr>
+          <tr>
+            <th>Especificaciones Técnicas:</th>
+            <td colspan="3">${data.equipo_specs || 'Configuración estándar'}</td>
+          </tr>
+          <tr>
+            <th>Valor Declarado Comercial:</th>
+            <td><strong>$ ${(Number(data.valor_declarado) || 0).toLocaleString('es-CO')} COP</strong></td>
+            <th>Condición Física de Despacho:</th>
+            <td><strong>${data.condicion_fisica || 'Operativo / Excelente'}</strong></td>
+          </tr>
+          <tr>
+            <th>Observaciones Técnicas:</th>
+            <td colspan="3">${data.observaciones || 'Equipo verificado y embalado de acuerdo al protocolo técnico de transporte de hardware.'}</td>
+          </tr>
+        </table>
+
+        <!-- 3. CLÁUSULA LEGAL Y CUSTODIA -->
+        <div class="legal-box">
+          <strong>CONTROL LEGAL Y TRAZABILIDAD ISO/IEC 20000 & 27001:</strong> El presente documento acredita la salida y transporte formal del activo inventariado entre instalaciones de <strong>CASALIMPIA S.A.</strong>. El funcionario receptor en la sede de destino asume la obligación de inspeccionar el estado físico y técnico del hardware al momento de la entrega por la transportadora, notificando cualquier anomalía al área de TI en un plazo máximo de 24 horas.
+        </div>
+
+        <!-- 4. FIRMAS -->
+        <table class="signatures-table">
+          <tr>
+            <td>
+              <div class="sig-container">
+                <div style="font-style:italic; font-family:serif; font-size:13px; font-weight:bold; color:#00355f;">
+                  ${data.despachado_por?.nombre || 'Administrador TI'}
+                </div>
+                <div style="font-size:8px; color:#64748b; font-family:monospace;">CERT-DESPACHO: ${certHash.substring(0, 16)}</div>
+              </div>
+              <div class="sig-line">
+                <div class="sig-title">${data.despachado_por?.nombre || 'Administrador TI'}</div>
+                <div class="sig-sub">${data.despachado_por?.cargo || 'Responsable TI Sede Origen'}</div>
+                <div class="sig-sub" style="font-weight:bold; color:#00355f;">FUNCIONARIO QUE DESPACHA (${data.regional_origen})</div>
+              </div>
+            </td>
+            <td>
+              <div class="sig-container">
+                <div style="font-style:italic; font-family:serif; font-size:13px; font-weight:bold; color:#00355f;">
+                  ${data.recibido_por?.nombre || 'Funcionario Receptor'}
+                </div>
+                <div style="font-size:8px; color:#64748b; font-family:monospace;">CUSTODIA DESTINO</div>
+              </div>
+              <div class="sig-line">
+                <div class="sig-title">${data.recibido_por?.nombre || 'Funcionario Receptor'}</div>
+                <div class="sig-sub">${data.recibido_por?.cargo || 'Receptor Responsable'}</div>
+                <div class="sig-sub" style="font-weight:bold; color:#00355f;">FUNCIONARIO QUE RECIBE (${data.regional_destino})</div>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="footer-note">
+          CASALIMPIA S.A. • Sistema de Gestión de Inventario SGI • Formato de Remisión Legal Oficial • Código Hash de Auditoría: ${certHash}
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=850,height=950');
+  if (!printWindow) {
+    alert("Por favor permita las ventanas emergentes (pop-ups) para generar la Remisión Oficial de Traslado.");
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+
+  printWindow.onload = () => {
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 400);
+  };
+}
+

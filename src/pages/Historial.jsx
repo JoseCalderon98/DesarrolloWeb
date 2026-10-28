@@ -4,25 +4,41 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { getStoredUser } from '../utils/userHelpers';
-import { generateAndPrintActa } from '../utils/actaPrintService';
+import { formatCurrencyCOP, calculateDepreciation } from '../utils/assetHelpers';
+import { generateAndPrintActa, generateAndPrintActaTraslado } from '../utils/actaPrintService';
 import Sidebar from '../components/Sidebar';
 
 export default function Historial() {
   const navigate = useNavigate();
   const currentUser = getStoredUser();
 
+  // Pestaña activa: 'AUDITORIA' | 'DEPRECIACION' | 'DANADOS' | 'TRASLADOS'
+  const [activeTab, setActiveTab] = useState('AUDITORIA');
+
   const [actasEntrega, setActasEntrega] = useState([]);
   const [actasDevolucion, setActasDevolucion] = useState([]);
+  const [actasTraslado, setActasTraslado] = useState([]);
   const [movimientosGenerales, setMovimientosGenerales] = useState([]);
   const [equipos, setEquipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Filtros Avanzados
+  // Filtros Avanzados (Pestaña Auditoría)
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTipo, setFilterTipo] = useState('all');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+
+  // Filtros Pestaña Depreciación
+  const [depSearchQuery, setDepSearchQuery] = useState('');
+  const [depCategoryFilter, setDepCategoryFilter] = useState('all');
+
+  // Filtros Pestaña Dañados
+  const [danadosSearchQuery, setDanadosSearchQuery] = useState('');
+
+  // Filtros Pestaña Traslados
+  const [trasladosSearchQuery, setTrasladosSearchQuery] = useState('');
+  const [filtroRegionalDestino, setFiltroRegionalDestino] = useState('all');
 
   // Paginación y Ordenación
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,28 +58,34 @@ export default function Historial() {
   };
 
   useEffect(() => {
-    let qEntrega = query(collection(db, "actas_entrega"));
-    let qDevolucion = query(collection(db, "actas_devolucion"));
-    let qMov = query(collection(db, "movimientos"));
-    let qEquipos = query(collection(db, "equipos"));
-
-    // Obtenemos todos los registros (el filtrado para Empleados se hace en memoria para mayor robustez)
+    const qEntrega = query(collection(db, "actas_entrega"));
+    const qDevolucion = query(collection(db, "actas_devolucion"));
+    const qTraslado = query(collection(db, "actas_traslado"));
+    const qMov = query(collection(db, "movimientos"));
+    const qEquipos = query(collection(db, "equipos"));
 
     const unsubE = onSnapshot(qEntrega, (s) => setActasEntrega(s.docs.map(d => ({ id: d.id, ...d.data() }))), (err) => {
       console.error(err);
       setErrorMsg(err.message);
       setLoading(false);
     });
+
     const unsubD = onSnapshot(qDevolucion, (s) => setActasDevolucion(s.docs.map(d => ({ id: d.id, ...d.data() }))), (err) => {
       console.error(err);
       setErrorMsg(err.message);
       setLoading(false);
     });
+
+    const unsubT = onSnapshot(qTraslado, (s) => setActasTraslado(s.docs.map(d => ({ id: d.id, ...d.data() }))), (err) => {
+      console.warn("Colección actas_traslado vacía o aún sin indexar:", err);
+    });
+
     const unsubM = onSnapshot(qMov, (s) => setMovimientosGenerales(s.docs.map(d => ({ id: d.id, ...d.data() }))), (err) => {
       console.error(err);
       setErrorMsg(err.message);
       setLoading(false);
     });
+
     const unsubEq = onSnapshot(qEquipos, (s) => {
       setEquipos(s.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
@@ -73,32 +95,30 @@ export default function Historial() {
       setLoading(false);
     });
 
-    return () => { unsubE(); unsubD(); unsubM(); unsubEq(); };
+    return () => { unsubE(); unsubD(); unsubT(); unsubM(); unsubEq(); };
   }, [currentUser?.email, currentUser?.rol]);
 
-  // Helper para manejar fechas (Strings ISO, Firestore Timestamps o Date objects)
+  // Helper para manejar fechas
   const parseDate = (fechaRaw) => {
     if (!fechaRaw) return new Date().toISOString();
     if (typeof fechaRaw.toDate === 'function') return fechaRaw.toDate().toISOString();
     if (fechaRaw.seconds) return new Date(fechaRaw.seconds * 1000).toISOString();
     if (fechaRaw instanceof Date) return fechaRaw.toISOString();
     
-    // Si es un string de fecha localizado como "10/10/2026", new Date() va a fallar ("Invalid Date").
     const asDate = new Date(fechaRaw);
     if (!isNaN(asDate.getTime())) return asDate.toISOString();
     
-    // Intentar extraer "DD/MM/YYYY" de manera super básica
     if (typeof fechaRaw === 'string' && fechaRaw.includes('/')) {
       const parts = fechaRaw.split(',')[0].split('/');
       if (parts.length === 3) {
-        // Asume formato DD/MM/YYYY
         return new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`).toISOString();
       }
     }
     
-    return new Date().toISOString(); // Fallback final
+    return new Date().toISOString();
   };
 
+  // Movimientos Consolidados de Auditoría
   const allMovements = useMemo(() => {
     const combined = [];
     
@@ -113,7 +133,7 @@ export default function Historial() {
         serial: eq.serial || 'N/A',
         colaborador: eq.asignatario || eq.ubicacion || 'Bodega',
         responsable_ti: eq.registrado_por?.nombre || 'Administrador TI',
-        detalles: 'Alta inicial de activo institucional (RF-02)',
+        detalles: `Alta de activo institucional. Valor: ${formatCurrencyCOP(eq.valor_declarado || 3500000)}`,
         rawDoc: eq,
         cert_hash: 'N/A'
       });
@@ -147,21 +167,36 @@ export default function Historial() {
         serial: acta.serial || 'N/A',
         colaborador: acta.entregado_por_colaborador?.nombre || 'Desconocido',
         responsable_ti: acta.recibido_por_ti?.nombre || 'TI',
-        detalles: acta.observaciones || 'Reintegro de equipo',
+        detalles: `Reintegro: ${acta.motivo || 'Devolución'} • Físico: ${acta.condicion_fisica || 'N/A'}`,
         rawDoc: acta,
         cert_hash: (typeof acta.acta_numero === 'string' && acta.acta_numero.includes('-')) ? `DEV-CERT-${acta.acta_numero.split('-')[2] || 'X'}` : 'N/A'
       });
     });
 
+    actasTraslado.forEach(acta => {
+      combined.push({
+        _id: acta.id,
+        tipo: 'TRASLADO',
+        acta_numero: acta.acta_numero || 'S/N',
+        fecha: parseDate(acta.createdAt || acta.timestamp || acta.fecha),
+        placa: acta.placa || 'N/A',
+        equipo_nombre: acta.equipo_nombre || 'N/A',
+        serial: acta.serial || 'N/A',
+        colaborador: `${acta.regional_origen?.replace('Regional ', '') || 'Origen'} ➔ ${acta.regional_destino?.replace('Regional ', '') || 'Destino'} (${acta.recibido_por?.nombre || 'Receptor'})`,
+        responsable_ti: acta.despachado_por?.nombre || 'TI Despacho',
+        detalles: `Traslado: ${acta.motivo || 'Reubicación'}. Guía: ${acta.guia_transporte || 'N/A'}`,
+        rawDoc: acta,
+        cert_hash: acta.cert_hash || 'N/A'
+      });
+    });
+
     movimientosGenerales.forEach(mov => {
-      // Evitar considerar eliminaciones (si existieran como movimiento) como entregas
       let tipoMov = mov.tipo || 'SISTEMA';
       if (mov.descripcion && String(mov.descripcion).toLowerCase().includes('elimin')) {
         tipoMov = 'ELIMINACIÓN';
       }
 
-      // Omitir ENTREGA y DEVOLUCIÓN ya que se procesan desde las colecciones de actas directamente
-      if (tipoMov === 'ENTREGA' || tipoMov === 'DEVOLUCIÓN' || tipoMov === 'DEVOLUCION') return;
+      if (['ENTREGA', 'DEVOLUCIÓN', 'DEVOLUCION', 'TRASLADO'].includes(tipoMov)) return;
 
       combined.push({
         _id: mov.id,
@@ -180,27 +215,20 @@ export default function Historial() {
     });
 
     return combined;
-  }, [equipos, actasEntrega, actasDevolucion, movimientosGenerales]);
+  }, [equipos, actasEntrega, actasDevolucion, actasTraslado, movimientosGenerales]);
 
-  // Filtrado y Ordenación
+  // Filtrado y Ordenación Auditoría
   const filteredAndSortedMovements = useMemo(() => {
     let result = allMovements.filter(item => {
-      // Filtrado RBAC para Empleado
       if (currentUser?.rol === 'Empleado') {
-        // Solo permitir ENTREGA, DEVOLUCIÓN y NOVEDAD
-        if (!['ENTREGA', 'DEVOLUCIÓN', 'NOVEDAD'].includes(item.tipo)) {
-          return false;
-        }
-
+        if (!['ENTREGA', 'DEVOLUCIÓN', 'NOVEDAD'].includes(item.tipo)) return false;
         const matchEmail = item.rawDoc?.colaborador?.email === currentUser.email || 
                            item.rawDoc?.entregado_por_colaborador?.email === currentUser.email ||
                            item.rawDoc?.asignatario_email === currentUser.email;
         const matchName = String(item.colaborador || '').trim().toLowerCase() === String(currentUser.nombre || '').trim().toLowerCase();
-        
         if (!matchEmail && !matchName) return false;
       }
 
-      // Búsqueda Textual
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         if (![item.placa, item.serial, item.equipo_nombre, item.colaborador, item.acta_numero, item.cert_hash].some(val => String(val || '').toLowerCase().includes(q))) {
@@ -208,18 +236,15 @@ export default function Historial() {
         }
       }
 
-      // Tipo de Movimiento
       if (filterTipo !== 'all' && item.tipo !== filterTipo) return false;
 
-      // Rango de Fechas
       const itemDate = new Date(item.fecha).getTime();
       if (fechaDesde && itemDate < new Date(fechaDesde).getTime()) return false;
-      if (fechaHasta && itemDate > new Date(fechaHasta).getTime() + 86400000) return false; // Incluir todo el día
+      if (fechaHasta && itemDate > new Date(fechaHasta).getTime() + 86400000) return false;
 
       return true;
     });
 
-    // Ordenación
     result.sort((a, b) => {
       let valA = a[sortConfig.key];
       let valB = b[sortConfig.key];
@@ -238,42 +263,208 @@ export default function Historial() {
     });
 
     return result;
-  }, [allMovements, searchQuery, filterTipo, fechaDesde, fechaHasta, sortConfig]);
+  }, [allMovements, searchQuery, filterTipo, fechaDesde, fechaHasta, sortConfig, currentUser]);
 
-  // Paginación
   const totalPages = Math.ceil(filteredAndSortedMovements.length / itemsPerPage);
   const currentMovements = filteredAndSortedMovements.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  // Métricas de auditoría calculadas
+  // 1. MÉTRICAS DE AUDITORÍA GENERAL
   const metricasAuditoria = useMemo(() => {
     const total = filteredAndSortedMovements.length;
     const altas = filteredAndSortedMovements.filter(m => m.tipo === 'ALTA').length;
     const entregas = filteredAndSortedMovements.filter(m => m.tipo === 'ENTREGA').length;
     const devoluciones = filteredAndSortedMovements.filter(m => m.tipo === 'DEVOLUCIÓN').length;
-    return { total, altas, entregas, devoluciones };
+    const traslados = filteredAndSortedMovements.filter(m => m.tipo === 'TRASLADO').length;
+    return { total, altas, entregas, devoluciones, traslados };
   }, [filteredAndSortedMovements]);
 
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
-    setSortConfig({ key, direction });
-  };
+  // 2. MOTOR Y MÉTRICAS DE DEPRECIACIÓN CONTABLE
+  const equiposConDepreciacion = useMemo(() => {
+    return equipos.map(eq => {
+      const dep = calculateDepreciation(eq);
+      return {
+        ...eq,
+        dep
+      };
+    });
+  }, [equipos]);
 
-  const handleExportCSV = () => {
+  const metricasDepreciacion = useMemo(() => {
+    let totalCapex = 0;
+    let totalDepreciacion = 0;
+    let totalValorResidual = 0;
+    let equiposTotalmenteDepreciados = 0;
+
+    equiposConDepreciacion.forEach(item => {
+      totalCapex += item.dep.valorDeclarado;
+      totalDepreciacion += item.dep.depreciacionAcumulada;
+      totalValorResidual += item.dep.valorResidual;
+      if (item.dep.estaDepreciadoTotalmente) {
+        equiposTotalmenteDepreciados++;
+      }
+    });
+
+    const porcentajeGlobal = totalCapex > 0 ? +((totalDepreciacion / totalCapex) * 100).toFixed(1) : 0;
+
+    return {
+      totalCapex,
+      totalDepreciacion,
+      totalValorResidual,
+      equiposTotalmenteDepreciados,
+      porcentajeGlobal
+    };
+  }, [equiposConDepreciacion]);
+
+  const filteredEquiposDepreciacion = useMemo(() => {
+    return equiposConDepreciacion.filter(eq => {
+      if (depCategoryFilter !== 'all') {
+        const cat = String(eq.categoria || '').toLowerCase();
+        if (!cat.includes(depCategoryFilter.toLowerCase())) return false;
+      }
+      if (depSearchQuery.trim()) {
+        const q = depSearchQuery.toLowerCase().trim();
+        return [eq.placa, eq.serial, eq.equipo_nombre, eq.ubicacion].some(v => String(v || '').toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [equiposConDepreciacion, depSearchQuery, depCategoryFilter]);
+
+  // 3. MOTOR Y MÉTRICAS DE EQUIPOS DAÑADOS Y BAJAS
+  const equiposDanados = useMemo(() => {
+    return equiposConDepreciacion.filter(eq => {
+      const estado = String(eq.estado || '').toUpperCase();
+      const condicion = String(eq.condicion_fisica || '').toLowerCase();
+      const ultimoMov = String(eq.ultimo_movimiento || '').toLowerCase();
+
+      const esDanado = estado === 'BAJA' || 
+                       estado === 'MANTENIMIENTO' || 
+                       condicion.includes('dañado') || 
+                       condicion.includes('reparación') ||
+                       condicion.includes('reparacion') ||
+                       ultimoMov.includes('dañado') ||
+                       ultimoMov.includes('novedad');
+
+      if (!esDanado) return false;
+
+      if (danadosSearchQuery.trim()) {
+        const q = danadosSearchQuery.toLowerCase().trim();
+        return [eq.placa, eq.serial, eq.equipo_nombre, eq.ubicacion, eq.asignatario, eq.condicion_fisica, eq.ultimo_movimiento].some(v => String(v || '').toLowerCase().includes(q));
+      }
+
+      return true;
+    });
+  }, [equiposConDepreciacion, danadosSearchQuery]);
+
+  const metricasDanados = useMemo(() => {
+    const totalDanados = equiposDanados.length;
+    let costoTotalPerdida = 0;
+    let enTaller = 0;
+    let bajasDefinitivas = 0;
+
+    equiposDanados.forEach(e => {
+      costoTotalPerdida += e.dep.valorDeclarado;
+      if (e.estado === 'MANTENIMIENTO') enTaller++;
+      if (e.estado === 'BAJA') bajasDefinitivas++;
+    });
+
+    const tasaFalla = equipos.length > 0 ? +((totalDanados / equipos.length) * 100).toFixed(1) : 0;
+
+    return { totalDanados, costoTotalPerdida, enTaller, bajasDefinitivas, tasaFalla };
+  }, [equiposDanados, equipos]);
+
+  // 4. MÉTRICAS Y FILTRADO DE TRASLADOS
+  const filteredTraslados = useMemo(() => {
+    return actasTraslado.filter(t => {
+      if (filtroRegionalDestino !== 'all' && t.regional_destino !== filtroRegionalDestino) return false;
+      if (trasladosSearchQuery.trim()) {
+        const q = trasladosSearchQuery.toLowerCase().trim();
+        return [t.acta_numero, t.placa, t.serial, t.equipo_nombre, t.regional_origen, t.regional_destino, t.guia_transporte, t.recibido_por?.nombre].some(v => String(v || '').toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [actasTraslado, filtroRegionalDestino, trasladosSearchQuery]);
+
+  const metricasTraslados = useMemo(() => {
+    const total = actasTraslado.length;
+    const porDestino = {};
+    const porOrigen = {};
+
+    actasTraslado.forEach(t => {
+      const dest = t.regional_destino || 'Desconocido';
+      const orig = t.regional_origen || 'Desconocido';
+      porDestino[dest] = (porDestino[dest] || 0) + 1;
+      porOrigen[orig] = (porOrigen[orig] || 0) + 1;
+    });
+
+    const topDestino = Object.entries(porDestino).sort((a, b) => b[1] - a[1])[0] || ['N/A', 0];
+    const topOrigen = Object.entries(porOrigen).sort((a, b) => b[1] - a[1])[0] || ['N/A', 0];
+
+    return { total, topDestino, topOrigen };
+  }, [actasTraslado]);
+
+  // EXPORTACIONES CSV
+  const handleExportAuditoriaCSV = () => {
     if (filteredAndSortedMovements.length === 0) return alert("No hay datos para exportar.");
-    const headers = ['Tipo', 'Acta N°', 'Fecha', 'Placa TI', 'Equipo', 'Serial', 'Colaborador Custodio', 'Responsable TI', 'Detalles', 'Hash Legal'];
+    const headers = ['Tipo', 'Acta N°', 'Fecha', 'Placa TI', 'Equipo', 'Serial', 'Custodio / Destino', 'Responsable TI', 'Detalles', 'Hash Legal'];
     const rows = filteredAndSortedMovements.map(m => [
       m.tipo, m.acta_numero, m.fecha, m.placa, m.equipo_nombre, m.serial, m.colaborador, m.responsable_ti, m.detalles, m.cert_hash
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Historial_Auditoria_${new Date().getTime()}.csv`);
-    document.body.appendChild(link);
+    link.download = `Auditoria_Movimientos_${Date.now()}.csv`;
     link.click();
-    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportDepreciacionCSV = () => {
+    if (filteredEquiposDepreciacion.length === 0) return alert("No hay equipos para exportar.");
+    const headers = ['Placa', 'Equipo', 'Categoria', 'Ubicacion', 'Estado', 'Valor Declarado (COP)', 'Vida Util (Meses)', 'Meses de Uso', '% Depreciado', 'Depreciacion Acumulada (COP)', 'Valor Residual en Libros (COP)', 'Fecha de Registro'];
+    const rows = filteredEquiposDepreciacion.map(e => [
+      e.placa, e.equipo_nombre, e.categoria, e.ubicacion, e.estado, e.dep.valorDeclarado, e.dep.vidaUtilMeses, e.dep.mesesUso, `${e.dep.porcentajeDepreciado}%`, e.dep.depreciacionAcumulada, e.dep.valorResidual, e.fecha_registro_texto || e.fecha_registro || 'N/A'
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Reporte_Depreciacion_Activos_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportDanadosCSV = () => {
+    if (equiposDanados.length === 0) return alert("No hay registros de equipos dañados para exportar.");
+    const headers = ['Placa', 'Equipo', 'Serial', 'Ubicacion', 'Estado Actual', 'Condicion Fisica', 'Ultimo Movimiento', 'Valor Comercial (COP)', 'Custodio Asignado'];
+    const rows = equiposDanados.map(e => [
+      e.placa, e.equipo_nombre, e.serial, e.ubicacion, e.estado, e.condicion_fisica || 'Dañado', e.ultimo_movimiento || 'N/A', e.dep.valorDeclarado, e.asignatario || 'Bodega TI'
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Reporte_Equipos_Danados_Bajas_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportTrasladosCSV = () => {
+    if (filteredTraslados.length === 0) return alert("No hay traslados para exportar.");
+    const headers = ['N° Remision', 'Fecha', 'Placa', 'Equipo', 'Serial', 'Regional Origen', 'Regional Destino', 'Nueva Ubicacion', 'Empresa Transporte', 'Guia', 'Motivo', 'Despachado Por', 'Recibido Por', 'Hash'];
+    const rows = filteredTraslados.map(t => [
+      t.acta_numero, t.fecha, t.placa, t.equipo_nombre, t.serial, t.regional_origen, t.regional_destino, t.nueva_ubicacion, t.empresa_transporte, t.guia_transporte, t.motivo, t.despachado_por?.nombre, t.recibido_por?.nombre, t.cert_hash
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Reporte_Traslados_InterRegionales_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -281,7 +472,7 @@ export default function Historial() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-space-sm text-primary">
           <span className="material-symbols-outlined animate-spin text-[32px]">sync</span>
-          <span className="font-headline-sm font-bold text-lg">Sincronizando Historial...</span>
+          <span className="font-headline-sm font-bold text-lg">Sincronizando Reportes y Auditoría SGI...</span>
         </div>
       </div>
     );
@@ -295,14 +486,42 @@ export default function Historial() {
         
         {/* HEADER SUPERIOR */}
         <header className="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-space-xl flex items-center justify-between gap-space-lg">
-          <div className="flex items-center gap-space-lg flex-1">
-            <h1 className="font-headline-sm text-xl text-primary font-black tracking-tight">Historial de Auditoría</h1>
+          <div className="flex items-center gap-space-md flex-1">
+            <span className="material-symbols-outlined text-primary text-[28px]">verified_user</span>
+            <div className="flex flex-col">
+              <h1 className="font-headline-sm text-xl text-primary font-black tracking-tight">Reportes y Auditoría SGI</h1>
+              <span className="text-[11px] text-outline uppercase font-bold tracking-wider">
+                Módulo Legal ISO 20000 & 27001 • Balance Financiero y Logístico
+              </span>
+            </div>
           </div>
+
           <div className="flex items-center gap-space-md shrink-0">
-            <button onClick={handleExportCSV} className="h-9 px-space-md flex items-center gap-space-xs rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-label-sm font-bold shadow-xs">
-              <span className="material-symbols-outlined text-[18px]">download</span>
-              <span>Exportar CSV</span>
-            </button>
+            {activeTab === 'AUDITORIA' && (
+              <button onClick={handleExportAuditoriaCSV} className="h-9 px-space-md flex items-center gap-space-xs rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-label-sm font-bold shadow-xs cursor-pointer">
+                <span className="material-symbols-outlined text-[18px]">download</span>
+                <span>Exportar CSV</span>
+              </button>
+            )}
+            {activeTab === 'DEPRECIACION' && (
+              <button onClick={handleExportDepreciacionCSV} className="h-9 px-space-md flex items-center gap-space-xs rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-label-sm font-bold shadow-xs cursor-pointer">
+                <span className="material-symbols-outlined text-[18px]">download</span>
+                <span>Exportar Balance CSV</span>
+              </button>
+            )}
+            {activeTab === 'DANADOS' && (
+              <button onClick={handleExportDanadosCSV} className="h-9 px-space-md flex items-center gap-space-xs rounded-lg text-error bg-error/10 hover:bg-error/20 transition-colors font-label-sm font-bold shadow-xs cursor-pointer">
+                <span className="material-symbols-outlined text-[18px]">download</span>
+                <span>Exportar Daños CSV</span>
+              </button>
+            )}
+            {activeTab === 'TRASLADOS' && (
+              <button onClick={handleExportTrasladosCSV} className="h-9 px-space-md flex items-center gap-space-xs rounded-lg text-secondary bg-secondary/10 hover:bg-secondary/20 transition-colors font-label-sm font-bold shadow-xs cursor-pointer">
+                <span className="material-symbols-outlined text-[18px]">download</span>
+                <span>Exportar Traslados CSV</span>
+              </button>
+            )}
+
             <div className="h-6 w-px bg-surface-container-highest"></div>
             <div className="flex items-center gap-space-md pl-space-xs">
               <div className="flex flex-col text-right hidden sm:flex">
@@ -320,242 +539,784 @@ export default function Historial() {
         {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 mt-16 p-space-xl overflow-y-auto">
           
-          {/* TARJETAS DE MÉTRICAS DE AUDITORÍA */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-space-md mb-space-lg">
-            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
-              <div>
-                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Registros Filtrados</span>
-                <span className="font-display-lg text-2xl font-bold text-on-surface">{metricasAuditoria.total}</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
-                <span className="material-symbols-outlined text-[22px]">analytics</span>
-              </div>
-            </div>
+          {/* BARRA DE NAVEGACIÓN POR PESTAÑAS */}
+          <div className="flex items-center gap-2 mb-space-lg bg-surface-container-low p-1.5 rounded-xl border border-surface-container-high/40 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('AUDITORIA')}
+              className={`flex items-center gap-2 px-space-lg py-2.5 rounded-lg font-label-md font-bold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'AUDITORIA' 
+                  ? 'bg-primary text-on-primary shadow-sm' 
+                  : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+              <span>Auditoría de Movimientos</span>
+            </button>
 
-            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
-              <div>
-                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Altas de Hardware</span>
-                <span className="font-display-lg text-2xl font-bold text-success">{metricasAuditoria.altas}</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center text-success">
-                <span className="material-symbols-outlined text-[22px]">add_circle</span>
-              </div>
-            </div>
+            <button
+              onClick={() => setActiveTab('DEPRECIACION')}
+              className={`flex items-center gap-2 px-space-lg py-2.5 rounded-lg font-label-md font-bold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'DEPRECIACION' 
+                  ? 'bg-primary text-on-primary shadow-sm' 
+                  : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">trending_down</span>
+              <span>Métricas de Depreciación (NIIF)</span>
+            </button>
 
-            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
-              <div>
-                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Entregas / Actas</span>
-                <span className="font-display-lg text-2xl font-bold text-secondary">{metricasAuditoria.entregas}</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
-                <span className="material-symbols-outlined text-[22px]">assignment_turned_in</span>
-              </div>
-            </div>
+            <button
+              onClick={() => setActiveTab('DANADOS')}
+              className={`flex items-center gap-2 px-space-lg py-2.5 rounded-lg font-label-md font-bold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'DANADOS' 
+                  ? 'bg-error text-on-error shadow-sm' 
+                  : 'text-on-surface-variant hover:bg-error-container/30 hover:text-error'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">build_circle</span>
+              <span>Equipos Dañados y Bajas ({metricasDanados.totalDanados})</span>
+            </button>
 
-            <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
-              <div>
-                <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Devoluciones</span>
-                <span className="font-display-lg text-2xl font-bold text-error">{metricasAuditoria.devoluciones}</span>
-              </div>
-              <div className="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center text-error">
-                <span className="material-symbols-outlined text-[22px]">keyboard_return</span>
-              </div>
-            </div>
+            <button
+              onClick={() => setActiveTab('TRASLADOS')}
+              className={`flex items-center gap-2 px-space-lg py-2.5 rounded-lg font-label-md font-bold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'TRASLADOS' 
+                  ? 'bg-secondary text-on-secondary shadow-sm' 
+                  : 'text-on-surface-variant hover:bg-secondary-container/30 hover:text-secondary'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">local_shipping</span>
+              <span>Reporte de Traslados ({metricasTraslados.total})</span>
+            </button>
           </div>
 
-          {/* PANEL DE FILTROS AVANZADOS */}
-          <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 mb-space-lg">
-            <div className="flex items-center gap-space-sm mb-space-md">
-              <span className="material-symbols-outlined text-primary text-[24px]">tune</span>
-              <h2 className="font-headline-sm text-lg font-bold text-on-surface">Filtros Avanzados</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-space-md">
-              {/* Búsqueda Global */}
-              <div className="flex flex-col gap-1 md:col-span-2">
-                <label className="font-label-sm text-outline font-bold">Buscar Registro</label>
-                <div className="relative">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
-                  <input 
-                    className="w-full h-10 pl-9 pr-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs" 
-                    placeholder="Placa, acta, custodio o serial..." 
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+          {/* ========================================================================= */}
+          {/* PESTAÑA 1: AUDITORÍA DE MOVIMIENTOS GENERALES                            */}
+          {/* ========================================================================= */}
+          {activeTab === 'AUDITORIA' && (
+            <>
+              {/* Tarjetas de Métricas de Auditoría */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-space-md mb-space-lg">
+                <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+                  <div>
+                    <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Registros</span>
+                    <span className="font-display-lg text-2xl font-bold text-on-surface">{metricasAuditoria.total}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined text-[22px]">analytics</span>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+                  <div>
+                    <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Altas</span>
+                    <span className="font-display-lg text-2xl font-bold text-success">{metricasAuditoria.altas}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center text-success">
+                    <span className="material-symbols-outlined text-[22px]">add_circle</span>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+                  <div>
+                    <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Entregas</span>
+                    <span className="font-display-lg text-2xl font-bold text-secondary">{metricasAuditoria.entregas}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
+                    <span className="material-symbols-outlined text-[22px]">assignment_turned_in</span>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between">
+                  <div>
+                    <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Devoluciones</span>
+                    <span className="font-display-lg text-2xl font-bold text-error">{metricasAuditoria.devoluciones}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center text-error">
+                    <span className="material-symbols-outlined text-[22px]">keyboard_return</span>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-md rounded-xl shadow-xs border border-surface-container-high/40 flex items-center justify-between col-span-2 md:col-span-1">
+                  <div>
+                    <span className="font-label-sm text-outline uppercase font-bold text-[11px] block">Traslados</span>
+                    <span className="font-display-lg text-2xl font-bold text-primary">{metricasAuditoria.traslados}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined text-[22px]">local_shipping</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Tipo de Movimiento */}
-              <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-outline font-bold">Tipo de Operación</label>
-                <select 
-                  className="w-full h-10 px-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer shadow-xs"
-                  value={filterTipo}
-                  onChange={(e) => { setFilterTipo(e.target.value); setCurrentPage(1); }}
-                >
-                  <option value="all">Todas las operaciones</option>
-                  <option value="ENTREGA">Entregas (Asignación)</option>
-                  <option value="DEVOLUCIÓN">Devoluciones (Reintegro)</option>
-                  <option value="ALTA">Altas de Inventario</option>
-                  <option value="BAJA">Bajas Definitivas</option>
-                </select>
-              </div>
-
-              {/* Rango de Fechas */}
-              <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-outline font-bold">Rango de Fechas</label>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="date" 
-                    className="w-full h-10 px-2 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
-                    value={fechaDesde}
-                    onChange={(e) => { setFechaDesde(e.target.value); setCurrentPage(1); }}
-                  />
-                  <span className="text-outline">-</span>
-                  <input 
-                    type="date" 
-                    className="w-full h-10 px-2 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
-                    value={fechaHasta}
-                    onChange={(e) => { setFechaHasta(e.target.value); setCurrentPage(1); }}
-                  />
+              {/* Panel de Filtros Avanzados */}
+              <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 mb-space-lg">
+                <div className="flex items-center gap-space-sm mb-space-md">
+                  <span className="material-symbols-outlined text-primary text-[24px]">tune</span>
+                  <h2 className="font-headline-sm text-lg font-bold text-on-surface">Filtros de Trazabilidad</h2>
                 </div>
-              </div>
-            </div>
-          </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-space-md">
+                  <div className="flex flex-col gap-1 md:col-span-2">
+                    <label className="font-label-sm text-outline font-bold">Buscar Registro</label>
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                      <input 
+                        className="w-full h-10 pl-9 pr-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs" 
+                        placeholder="Placa, acta, custodio o serial..." 
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-          {/* TABLA DE RESULTADOS */}
-          <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container-high/40 overflow-hidden flex flex-col">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-surface-container-low border-b border-surface-container-high/40 text-label-sm font-bold text-outline">
-                  <tr>
-                    <th className="px-space-md py-space-sm cursor-pointer hover:bg-surface-container transition-colors" onClick={() => requestSort('fecha')}>
-                      <div className="flex items-center gap-1">Fecha {sortConfig.key === 'fecha' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</div>
-                    </th>
-                    <th className="px-space-md py-space-sm cursor-pointer hover:bg-surface-container transition-colors" onClick={() => requestSort('tipo')}>
-                      <div className="flex items-center gap-1">Tipo {sortConfig.key === 'tipo' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</div>
-                    </th>
-                    <th className="px-space-md py-space-sm">Equipo / Placa</th>
-                    <th className="px-space-md py-space-sm cursor-pointer hover:bg-surface-container transition-colors" onClick={() => requestSort('colaborador')}>
-                      <div className="flex items-center gap-1">Ubicación / Custodio {sortConfig.key === 'colaborador' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</div>
-                    </th>
-                    <th className="px-space-md py-space-sm hidden lg:table-cell">Responsable TI</th>
-                    <th className="px-space-md py-space-sm text-right">Acción</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-container-high/20">
-                  {errorMsg ? (
-                    <tr>
-                      <td colSpan="6" className="px-space-md py-12 text-center bg-error-container text-on-error-container">
-                        <span className="material-symbols-outlined text-[48px] mb-2 opacity-80 text-error">lock</span>
-                        <p className="font-bold text-lg">Error de Permisos en Firestore</p>
-                        <p className="font-body-sm max-w-md mx-auto mt-2">{errorMsg}</p>
-                        <p className="text-xs mt-2 opacity-80">Por favor, inicia sesión con un usuario validado por Firebase Auth o actualiza las Reglas de Firestore.</p>
-                      </td>
-                    </tr>
-                  ) : currentMovements.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="px-space-md py-12 text-center text-outline">
-                        <span className="material-symbols-outlined text-[48px] mb-2 opacity-50">search_off</span>
-                        <p className="font-body-md">No se encontraron registros para los filtros aplicados.</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    currentMovements.map(mov => (
-                      <tr key={mov._id} className="hover:bg-surface-container-low/50 transition-colors group">
-                        <td className="px-space-md py-space-sm font-mono text-xs text-on-surface-variant">
-                          {new Date(mov.fecha).toLocaleString('es-CO')}
-                        </td>
-                        <td className="px-space-md py-space-sm">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border
-                            ${mov.tipo === 'ENTREGA' ? 'bg-secondary/10 text-secondary border-secondary/20' : 
-                              mov.tipo === 'DEVOLUCIÓN' ? 'bg-error/10 text-error border-error/20' : 
-                              mov.tipo === 'ALTA' ? 'bg-success/10 text-success border-success/20' : 
-                              'bg-primary/10 text-primary border-primary/20'}`}>
-                            <span className="w-1.5 h-1.5 rounded-full currentColor bg-current"></span>
-                            {String(mov.tipo)}
-                          </span>
-                        </td>
-                        <td className="px-space-md py-space-sm">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-sm text-on-surface truncate max-w-[200px]">{String(mov.equipo_nombre)}</span>
-                            <span className="text-xs text-outline font-mono">{String(mov.placa)}</span>
-                          </div>
-                        </td>
-                        <td className="px-space-md py-space-sm text-sm text-on-surface-variant truncate max-w-[150px]">
-                          {String(mov.colaborador)}
-                        </td>
-                        <td className="px-space-md py-space-sm hidden lg:table-cell text-sm text-outline">
-                          {String(mov.responsable_ti)}
-                        </td>
-                        <td className="px-space-md py-space-sm text-right">
-                          <button 
-                            onClick={() => setSelectedMovimiento(mov)}
-                            className="p-1.5 text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer"
-                            title="Ver Trazabilidad Completa"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">visibility</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* PAGINACIÓN */}
-            {totalPages > 1 && (
-              <div className="bg-surface-container-low border-t border-surface-container-high/40 p-space-sm flex items-center justify-between px-space-md">
-                <span className="text-sm text-outline font-semibold">
-                  Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredAndSortedMovements.length)} de {filteredAndSortedMovements.length} registros
-                </span>
-                <div className="flex items-center gap-1">
-                  <button 
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(c => c - 1)}
-                    className="p-1 text-on-surface-variant hover:bg-surface-container hover:text-on-surface disabled:opacity-30 disabled:cursor-not-allowed rounded"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 flex items-center justify-center rounded text-sm font-bold transition-colors
-                        ${currentPage === page ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container'}`}
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-sm text-outline font-bold">Tipo de Operación</label>
+                    <select 
+                      className="w-full h-10 px-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer shadow-xs"
+                      value={filterTipo}
+                      onChange={(e) => { setFilterTipo(e.target.value); setCurrentPage(1); }}
                     >
-                      {page}
-                    </button>
-                  ))}
-                  <button 
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(c => c + 1)}
-                    className="p-1 text-on-surface-variant hover:bg-surface-container hover:text-on-surface disabled:opacity-30 disabled:cursor-not-allowed rounded"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                  </button>
+                      <option value="all">Todas las operaciones</option>
+                      <option value="ENTREGA">Entregas (Asignación)</option>
+                      <option value="DEVOLUCIÓN">Devoluciones (Reintegro)</option>
+                      <option value="TRASLADO">Traslados Regionales</option>
+                      <option value="ALTA">Altas de Inventario</option>
+                      <option value="BAJA">Bajas Definitivas</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-sm text-outline font-bold">Rango de Fechas</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="date" 
+                        className="w-full h-10 px-2 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+                        value={fechaDesde}
+                        onChange={(e) => { setFechaDesde(e.target.value); setCurrentPage(1); }}
+                      />
+                      <span className="text-outline">-</span>
+                      <input 
+                        type="date" 
+                        className="w-full h-10 px-2 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+                        value={fechaHasta}
+                        onChange={(e) => { setFechaHasta(e.target.value); setCurrentPage(1); }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Tabla de Auditoría */}
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container-high/40 overflow-hidden mb-space-lg">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse font-body-sm">
+                    <thead>
+                      <tr className="bg-surface-container-low text-outline font-label-sm uppercase select-none border-b border-surface-container-high/40">
+                        <th className="py-3 px-4 font-bold cursor-pointer hover:text-on-surface" onClick={() => setSortConfig({ key: 'tipo', direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>Tipo Operación</th>
+                        <th className="py-3 px-4 font-bold">Acta / Documento</th>
+                        <th className="py-3 px-4 font-bold cursor-pointer hover:text-on-surface" onClick={() => setSortConfig({ key: 'fecha', direction: sortConfig.direction === 'asc' ? 'desc' : 'asc' })}>Fecha y Hora Legal</th>
+                        <th className="py-3 px-4 font-bold">Placa TI</th>
+                        <th className="py-3 px-4 font-bold">Hardware y Serial</th>
+                        <th className="py-3 px-4 font-bold">Custodio / Ruta</th>
+                        <th className="py-3 px-4 font-bold">Responsable TI</th>
+                        <th className="py-3 px-4 font-bold">Detalles</th>
+                        <th className="py-3 px-4 text-right pr-4 font-bold">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-container-high/30">
+                      {currentMovements.length === 0 ? (
+                        <tr>
+                          <td colSpan="9" className="py-12 text-center text-outline">
+                            No se encontraron registros que coincidan con los filtros aplicados.
+                          </td>
+                        </tr>
+                      ) : (
+                        currentMovements.map((item) => (
+                          <tr key={item._id} className="hover:bg-surface-container-low transition-colors">
+                            <td className="py-3 px-4 font-bold">
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                                item.tipo === 'ENTREGA' ? 'bg-secondary/15 text-secondary' :
+                                item.tipo === 'DEVOLUCIÓN' ? 'bg-error/15 text-error' :
+                                item.tipo === 'TRASLADO' ? 'bg-primary/15 text-primary' :
+                                item.tipo === 'ALTA' ? 'bg-success/15 text-success' : 'bg-surface-container text-on-surface'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  item.tipo === 'ENTREGA' ? 'bg-secondary' :
+                                  item.tipo === 'DEVOLUCIÓN' ? 'bg-error' :
+                                  item.tipo === 'TRASLADO' ? 'bg-primary' :
+                                  item.tipo === 'ALTA' ? 'bg-success' : 'bg-outline'
+                                }`}></span>
+                                {item.tipo}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-code-mono text-xs font-bold text-primary">
+                              {item.acta_numero}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-outline">
+                              {new Date(item.fecha).toLocaleString('es-CO')}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-on-surface font-code-mono">
+                              {item.placa}
+                            </td>
+                            <td className="py-3 px-4 text-xs">
+                              <span className="font-semibold block text-on-surface">{item.equipo_nombre}</span>
+                              <span className="text-outline font-code-mono">{item.serial}</span>
+                            </td>
+                            <td className="py-3 px-4 text-xs font-semibold text-on-surface">
+                              {item.colaborador}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-outline">
+                              {item.responsable_ti}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-on-surface-variant max-w-xs truncate" title={item.detalles}>
+                              {item.detalles}
+                            </td>
+                            <td className="py-3 px-4 text-right pr-4">
+                              <button
+                                onClick={() => setSelectedMovimiento(item)}
+                                className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors inline-flex items-center gap-1 font-bold text-xs cursor-pointer"
+                                title="Ver Ficha de Detalle"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">visibility</span>
+                                <span>Detalle</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Paginación */}
+                {totalPages > 1 && (
+                  <div className="p-space-md bg-surface-container-low flex items-center justify-between border-t border-surface-container-high/40">
+                    <span className="text-xs text-outline">
+                      Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong> ({filteredAndSortedMovements.length} registros)
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1 rounded bg-surface-container text-xs font-bold disabled:opacity-40"
+                      >
+                        Anterior
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1 rounded bg-surface-container text-xs font-bold disabled:opacity-40"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ========================================================================= */}
+          {/* PESTAÑA 2: MÉTRICAS FINANCIERAS Y DEPRECIACIÓN CONTABLE                  */}
+          {/* ========================================================================= */}
+          {activeTab === 'DEPRECIACION' && (
+            <div className="flex flex-col gap-space-lg">
+              
+              {/* Tarjetas KPI Financieras */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Valor Total de Flota (CAPEX)</span>
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">account_balance</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-primary">
+                    {formatCurrencyCOP(metricasDepreciacion.totalCapex)}
+                  </span>
+                  <span className="text-xs text-outline mt-1">{equipos.length} equipos activos valorizados</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Depreciación Acumulada</span>
+                    <div className="w-9 h-9 rounded-lg bg-error/10 text-error flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">trending_down</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-error">
+                    {formatCurrencyCOP(metricasDepreciacion.totalDepreciacion)}
+                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-error h-full rounded-full" style={{ width: `${metricasDepreciacion.porcentajeGlobal}%` }}></div>
+                    </div>
+                    <span className="text-xs font-bold text-error">{metricasDepreciacion.porcentajeGlobal}%</span>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Valor Residual en Libros</span>
+                    <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">savings</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-success">
+                    {formatCurrencyCOP(metricasDepreciacion.totalValorResidual)}
+                  </span>
+                  <span className="text-xs text-outline mt-1">Patrimonio tecnológico neto productivo</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Depreciados 100%</span>
+                    <div className="w-9 h-9 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">done_all</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-secondary">
+                    {metricasDepreciacion.equiposTotalmenteDepreciados} <span className="text-sm font-normal text-outline">equipos</span>
+                  </span>
+                  <span className="text-xs text-outline mt-1">Vida útil cumplida (Candidatos a renovación)</span>
+                </div>
+              </div>
+
+              {/* Filtros de la tabla de Depreciación */}
+              <div className="bg-surface-container-lowest p-space-md rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col md:flex-row items-center justify-between gap-space-md">
+                <div className="flex items-center gap-2 w-full md:w-auto flex-1">
+                  <div className="relative w-full max-w-md">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                    <input
+                      type="text"
+                      className="w-full h-10 pl-9 pr-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-xs"
+                      placeholder="Filtrar por placa, modelo o regional..."
+                      value={depSearchQuery}
+                      onChange={(e) => setDepSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <select
+                    className="h-10 px-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                    value={depCategoryFilter}
+                    onChange={(e) => setDepCategoryFilter(e.target.value)}
+                  >
+                    <option value="all">Todas las Categorías</option>
+                    <option value="laptop">Portátiles / Laptops</option>
+                    <option value="escritorio">Estaciones de Escritorio</option>
+                    <option value="servidor">Servidores y Racks</option>
+                    <option value="monitor">Monitores</option>
+                  </select>
+                </div>
+                <div className="text-xs text-outline font-semibold">
+                  Norma NIIF: Depreciación en línea recta a 36 meses (3 años)
+                </div>
+              </div>
+
+              {/* Tabla de Depreciación Contable */}
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container-high/40 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-body-sm">
+                    <thead>
+                      <tr className="bg-surface-container-low text-outline font-label-sm uppercase select-none border-b border-surface-container-high/40">
+                        <th className="py-3 px-4 font-bold">Placa TI</th>
+                        <th className="py-3 px-4 font-bold">Activo Tecnológico</th>
+                        <th className="py-3 px-4 font-bold">Ubicación</th>
+                        <th className="py-3 px-4 font-bold">Antigüedad (Meses)</th>
+                        <th className="py-3 px-4 font-bold">Valor Adquisición (COP)</th>
+                        <th className="py-3 px-4 font-bold w-48">% Depreciado</th>
+                        <th className="py-3 px-4 font-bold text-error">Depreciación Acumulada</th>
+                        <th className="py-3 px-4 font-bold text-success text-right pr-4">Valor Residual en Libros</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-container-high/30">
+                      {filteredEquiposDepreciacion.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="py-12 text-center text-outline">
+                            No hay activos que coincidan con la búsqueda.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredEquiposDepreciacion.map((item) => (
+                          <tr key={item.id} className="hover:bg-surface-container-low transition-colors">
+                            <td className="py-3 px-4 font-bold font-code-mono text-primary">
+                              {item.placa}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="font-semibold block text-on-surface">{item.equipo_nombre}</span>
+                              <span className="text-xs text-outline">{item.categoria}</span>
+                            </td>
+                            <td className="py-3 px-4 text-xs font-semibold text-on-surface">
+                              {item.ubicacion || 'Regional Medellin'}
+                            </td>
+                            <td className="py-3 px-4 text-xs font-code-mono">
+                              <strong>{item.dep.mesesUso}</strong> / {item.dep.vidaUtilMeses}m
+                            </td>
+                            <td className="py-3 px-4 font-bold text-on-surface">
+                              {formatCurrencyCOP(item.dep.valorDeclarado)}
+                              {item.dep.isEstimated && (
+                                <span className="block text-[10px] text-outline italic">Est. de referencia</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full transition-all ${
+                                      item.dep.porcentajeDepreciado >= 100 ? 'bg-error' : item.dep.porcentajeDepreciado > 60 ? 'bg-amber-500' : 'bg-success'
+                                    }`} 
+                                    style={{ width: `${item.dep.porcentajeDepreciado}%` }}
+                                  ></div>
+                                </div>
+                                <span className="font-code-mono text-xs font-bold min-w-10 text-right">
+                                  {item.dep.porcentajeDepreciado}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-error font-code-mono">
+                              -{formatCurrencyCOP(item.dep.depreciacionAcumulada)}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-success font-code-mono text-right pr-4">
+                              {formatCurrencyCOP(item.dep.valorResidual)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* PESTAÑA 3: EQUIPOS DAÑADOS, EN TALLER Y BAJAS                            */}
+          {/* ========================================================================= */}
+          {activeTab === 'DANADOS' && (
+            <div className="flex flex-col gap-space-lg">
+              
+              {/* Tarjetas KPI Dañados */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Equipos Averiados / Dañados</span>
+                    <div className="w-9 h-9 rounded-lg bg-error/10 text-error flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">report_problem</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-error">
+                    {metricasDanados.totalDanados}
+                  </span>
+                  <span className="text-xs text-outline mt-1">Tasa de avería de la flota: {metricasDanados.tasaFalla}%</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Costo Económico Comprometido</span>
+                    <div className="w-9 h-9 rounded-lg bg-error/10 text-error flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">price_change</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-error">
+                    {formatCurrencyCOP(metricasDanados.costoTotalPerdida)}
+                  </span>
+                  <span className="text-xs text-outline mt-1">Valor declarado de equipos inoperativos</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">En Laboratorio / Taller TI</span>
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">build</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-amber-600">
+                    {metricasDanados.enTaller} <span className="text-sm font-normal text-outline">activos</span>
+                  </span>
+                  <span className="text-xs text-outline mt-1">En proceso de diagnóstico o garantía</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Bajas Definitivas</span>
+                    <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-outline">
+                      <span className="material-symbols-outlined text-[20px]">delete_forever</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-on-surface">
+                    {metricasDanados.bajasDefinitivas} <span className="text-sm font-normal text-outline">equipos</span>
+                  </span>
+                  <span className="text-xs text-outline mt-1">Retirados del ciclo productivo</span>
+                </div>
+              </div>
+
+              {/* Filtro de Dañados */}
+              <div className="bg-surface-container-lowest p-space-md rounded-2xl shadow-sm border border-surface-container-high/40 flex items-center justify-between gap-space-md">
+                <div className="relative w-full max-w-md">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                  <input
+                    type="text"
+                    className="w-full h-10 pl-9 pr-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+                    placeholder="Buscar equipo dañado por placa, serial o custodio..."
+                    value={danadosSearchQuery}
+                    onChange={(e) => setDanadosSearchQuery(e.target.value)}
+                  />
+                </div>
+                <span className="text-xs text-outline font-semibold">
+                  Mostrando {equiposDanados.length} equipos con reporte de daño o baja
+                </span>
+              </div>
+
+              {/* Tabla de Equipos Dañados */}
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container-high/40 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-body-sm">
+                    <thead>
+                      <tr className="bg-surface-container-low text-outline font-label-sm uppercase select-none border-b border-surface-container-high/40">
+                        <th className="py-3 px-4 font-bold">Placa TI</th>
+                        <th className="py-3 px-4 font-bold">Hardware</th>
+                        <th className="py-3 px-4 font-bold">Serial</th>
+                        <th className="py-3 px-4 font-bold">Estado Actual</th>
+                        <th className="py-3 px-4 font-bold">Condición Reportada</th>
+                        <th className="py-3 px-4 font-bold">Sede / Ubicación</th>
+                        <th className="py-3 px-4 font-bold">Último Movimiento / Causa</th>
+                        <th className="py-3 px-4 font-bold text-right pr-4">Valor Comercial</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-container-high/30">
+                      {equiposDanados.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="py-12 text-center text-outline">
+                            ¡Excelente! No hay equipos con reporte de daño o baja en el sistema.
+                          </td>
+                        </tr>
+                      ) : (
+                        equiposDanados.map((item) => (
+                          <tr key={item.id} className="hover:bg-surface-container-low transition-colors">
+                            <td className="py-3 px-4 font-bold font-code-mono text-error">
+                              {item.placa}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-on-surface">
+                              {item.equipo_nombre}
+                            </td>
+                            <td className="py-3 px-4 text-xs font-code-mono text-outline">
+                              {item.serial}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                item.estado === 'MANTENIMIENTO' ? 'bg-amber-500/15 text-amber-700' : 'bg-error/15 text-error'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${item.estado === 'MANTENIMIENTO' ? 'bg-amber-500' : 'bg-error'}`}></span>
+                                {item.estado}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-xs font-bold text-error">
+                              {item.condicion_fisica || 'Reportado Dañado'}
+                            </td>
+                            <td className="py-3 px-4 text-xs font-semibold text-on-surface">
+                              {item.ubicacion}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-on-surface-variant max-w-xs truncate" title={item.ultimo_movimiento}>
+                              {item.ultimo_movimiento}
+                            </td>
+                            <td className="py-3 px-4 font-bold font-code-mono text-right pr-4 text-on-surface">
+                              {formatCurrencyCOP(item.dep.valorDeclarado)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* PESTAÑA 4: REPORTE DE TRASLADOS INTER-REGIONALES                         */}
+          {/* ========================================================================= */}
+          {activeTab === 'TRASLADOS' && (
+            <div className="flex flex-col gap-space-lg">
+              
+              {/* Tarjetas KPI Traslados */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Total Remisiones de Traslado</span>
+                    <div className="w-9 h-9 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">local_shipping</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-2xl font-black text-secondary">
+                    {metricasTraslados.total}
+                  </span>
+                  <span className="text-xs text-outline mt-1">Movimientos inter-sedes registrados</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Mayor Sede Despachadora</span>
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">flight_takeoff</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-lg font-black text-primary truncate">
+                    {metricasTraslados.topOrigen[0]?.replace('Regional ', '')}
+                  </span>
+                  <span className="text-xs text-outline mt-1">{metricasTraslados.topOrigen[1]} despachos realizados</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Mayor Sede Receptora</span>
+                    <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">flight_land</span>
+                    </div>
+                  </div>
+                  <span className="font-display-lg text-lg font-black text-success truncate">
+                    {metricasTraslados.topDestino[0]?.replace('Regional ', '')}
+                  </span>
+                  <span className="text-xs text-outline mt-1">{metricasTraslados.topDestino[1]} transferencias recibidas</span>
+                </div>
+
+                <div className="bg-surface-container-lowest p-space-lg rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-outline uppercase font-bold text-xs">Gestión Logística</span>
+                    <div className="w-9 h-9 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+                      <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate('/traslados')}
+                    className="w-full h-9 bg-primary text-on-primary font-bold rounded-lg text-xs flex items-center justify-center gap-1 hover:bg-primary-container transition-colors shadow-sm cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">local_shipping</span>
+                    <span>Realizar Nuevo Traslado</span>
+                  </button>
+                  <span className="text-[10px] text-outline text-center mt-1">Formato Oficial TI-FO-06</span>
+                </div>
+              </div>
+
+              {/* Filtros de Traslados */}
+              <div className="bg-surface-container-lowest p-space-md rounded-2xl shadow-sm border border-surface-container-high/40 flex flex-col sm:flex-row items-center justify-between gap-space-md">
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+                  <div className="relative w-full max-w-md">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+                    <input
+                      type="text"
+                      className="w-full h-10 pl-9 pr-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-xs"
+                      placeholder="Buscar por remisión, placa, transportadora o guía..."
+                      value={trasladosSearchQuery}
+                      onChange={(e) => setTrasladosSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <select
+                    className="h-10 px-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer shadow-xs"
+                    value={filtroRegionalDestino}
+                    onChange={(e) => setFiltroRegionalDestino(e.target.value)}
+                  >
+                    <option value="all">Todas las Sedes Destino</option>
+                    <option value="Regional Medellin">Regional Medellín</option>
+                    <option value="Regional Bogota">Regional Bogotá</option>
+                    <option value="Regional Barranquilla">Regional Barranquilla</option>
+                    <option value="Regional Pereira">Regional Pereira</option>
+                  </select>
+                </div>
+                <span className="text-xs text-outline font-semibold">
+                  Mostrando {filteredTraslados.length} remisiones de traslado
+                </span>
+              </div>
+
+              {/* Tabla de Traslados */}
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-surface-container-high/40 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-body-sm">
+                    <thead>
+                      <tr className="bg-surface-container-low text-outline font-label-sm uppercase select-none border-b border-surface-container-high/40">
+                        <th className="py-3 px-4 font-bold">N° Remisión</th>
+                        <th className="py-3 px-4 font-bold">Fecha</th>
+                        <th className="py-3 px-4 font-bold">Placa TI</th>
+                        <th className="py-3 px-4 font-bold">Hardware Trasladado</th>
+                        <th className="py-3 px-4 font-bold">Ruta (Origen ➔ Destino)</th>
+                        <th className="py-3 px-4 font-bold">Transporte y N° Guía</th>
+                        <th className="py-3 px-4 font-bold">Receptor Responsable</th>
+                        <th className="py-3 px-4 text-right pr-4 font-bold">Documento Oficial</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-container-high/30">
+                      {filteredTraslados.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="py-12 text-center text-outline">
+                            No hay traslados registrados con los filtros actuales.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredTraslados.map((item) => (
+                          <tr key={item.id} className="hover:bg-surface-container-low transition-colors">
+                            <td className="py-3 px-4 font-bold font-code-mono text-primary">
+                              {item.acta_numero}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-outline">
+                              {item.fecha || 'Reciente'}
+                            </td>
+                            <td className="py-3 px-4 font-bold text-on-surface font-code-mono">
+                              {item.placa}
+                            </td>
+                            <td className="py-3 px-4 text-xs">
+                              <span className="font-semibold block text-on-surface">{item.equipo_nombre}</span>
+                              <span className="text-outline font-code-mono">SN: {item.serial}</span>
+                            </td>
+                            <td className="py-3 px-4 text-xs">
+                              <span className="inline-flex items-center gap-1 font-semibold">
+                                <span className="text-primary font-bold">{item.regional_origen?.replace('Regional ', '')}</span>
+                                <span className="material-symbols-outlined text-[14px] text-outline">arrow_forward</span>
+                                <span className="text-success font-bold">{item.regional_destino?.replace('Regional ', '')}</span>
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-xs">
+                              <span className="font-semibold block text-on-surface">{item.empresa_transporte}</span>
+                              <span className="font-code-mono text-outline font-bold">{item.guia_transporte}</span>
+                            </td>
+                            <td className="py-3 px-4 text-xs text-on-surface">
+                              <strong>{item.recibido_por?.nombre}</strong>
+                              <span className="block text-outline text-[11px]">{item.recibido_por?.cargo}</span>
+                            </td>
+                            <td className="py-3 px-4 text-right pr-4">
+                              <button
+                                onClick={() => generateAndPrintActaTraslado(item)}
+                                className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors inline-flex items-center gap-1 font-bold text-xs cursor-pointer"
+                                title="Reimprimir Remisión Oficial de Traslado"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">print</span>
+                                <span>Remisión PDF</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
         </main>
       </div>
 
-      {/* MODAL DE DETALLE / LÍNEA DE TIEMPO RÁPIDA */}
+      {/* MODAL DE DETALLE DEL REGISTRO DE AUDITORÍA */}
       {selectedMovimiento && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 backdrop-blur-sm p-space-md animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-space-md">
           <div className="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden">
             <div className={`p-space-md flex items-center justify-between text-white
               ${selectedMovimiento.tipo === 'ENTREGA' ? 'bg-secondary' : 
-                selectedMovimiento.tipo === 'DEVOLUCIÓN' ? 'bg-error' : 'bg-primary'}`}>
+                selectedMovimiento.tipo === 'DEVOLUCIÓN' ? 'bg-error' : 
+                selectedMovimiento.tipo === 'TRASLADO' ? 'bg-primary' : 'bg-primary'}`}>
               <div className="flex items-center gap-space-sm">
                 <span className="material-symbols-outlined text-[24px]">receipt_long</span>
-                <span className="font-headline-sm text-lg font-bold">Detalle del Registro</span>
+                <span className="font-headline-sm text-lg font-bold">Detalle del Registro de Auditoría</span>
               </div>
-              <button onClick={() => setSelectedMovimiento(null)} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+              <button onClick={() => setSelectedMovimiento(null)} className="p-1 hover:bg-white/20 rounded-full transition-colors cursor-pointer">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -590,8 +1351,8 @@ export default function Historial() {
                 <div className="absolute w-4 h-4 rounded-full bg-secondary -left-[9px] top-1 ring-4 ring-surface-container-lowest"></div>
                 <h3 className="font-bold text-on-surface">Actores de Custodia / Ubicación</h3>
                 <p className="text-sm text-on-surface-variant">
-                  <strong>Custodio / Sede:</strong> {selectedMovimiento.colaborador} <br/>
-                  <strong>Técnico TI:</strong> {selectedMovimiento.responsable_ti}
+                  <strong>Custodio / Destino:</strong> {selectedMovimiento.colaborador} <br/>
+                  <strong>Responsable TI:</strong> {selectedMovimiento.responsable_ti}
                 </p>
               </div>
 
@@ -606,16 +1367,25 @@ export default function Historial() {
             </div>
 
             <div className="p-space-md border-t border-surface-container-high/40 bg-surface-container flex justify-end gap-space-sm">
-              <button onClick={() => setSelectedMovimiento(null)} className="px-space-md py-2 font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors">
+              <button onClick={() => setSelectedMovimiento(null)} className="px-space-md py-2 font-bold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors cursor-pointer">
                 Cerrar
               </button>
-              {(selectedMovimiento.tipo === 'ENTREGA' || selectedMovimiento.tipo === 'DEVOLUCIÓN') && selectedMovimiento.rawDoc.acta_numero && (
+              {(selectedMovimiento.tipo === 'ENTREGA' || selectedMovimiento.tipo === 'DEVOLUCIÓN') && selectedMovimiento.rawDoc?.acta_numero && (
                 <button 
                   onClick={() => generateAndPrintActa(selectedMovimiento.rawDoc, selectedMovimiento.tipo)}
-                  className="px-space-md py-2 font-bold bg-primary text-on-primary rounded-lg shadow-sm hover:bg-primary-container transition-colors flex items-center gap-1"
+                  className="px-space-md py-2 font-bold bg-primary text-on-primary rounded-lg shadow-sm hover:bg-primary-container transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">print</span>
                   Reimprimir Acta
+                </button>
+              )}
+              {selectedMovimiento.tipo === 'TRASLADO' && (
+                <button 
+                  onClick={() => generateAndPrintActaTraslado(selectedMovimiento.rawDoc)}
+                  className="px-space-md py-2 font-bold bg-primary text-on-primary rounded-lg shadow-sm hover:bg-primary-container transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px]">print</span>
+                  Reimprimir Remisión Oficial
                 </button>
               )}
             </div>

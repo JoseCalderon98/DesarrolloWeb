@@ -6,7 +6,7 @@ import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot,
 import { db } from '../firebase';
 import { getStoredUser } from '../utils/userHelpers';
 import Sidebar from '../components/Sidebar';
-import { exportToCSV } from '../utils/assetHelpers';
+import { exportToCSV, formatCurrencyCOP } from '../utils/assetHelpers';
 
 const LAST_HARDWARE_KEY = 'rf02_last_hardware_payload';
 const REGIONES_UBICACION = ['Regional Medellin', 'Regional Bogota', 'Regional Barranquilla', 'Regional Pereira'];
@@ -82,6 +82,8 @@ const parseTemplateCSV = (text) => {
   const idxCategoria = findIndex(['categoria']);
   const idxEstado = findIndex(['estado']);
   const idxUbicacion = findIndex(['ubicacion']);
+  const idxValor = findIndex(['valor', 'valor_declarado', 'precio', 'costo', 'valor_compra']);
+  const idxVida = findIndex(['vida_util', 'vida_util_meses', 'meses_depreciacion']);
 
   const requiredIndexes = [idxPlaca, idxEquipo, idxSpecs, idxSerial];
   if (requiredIndexes.some((idx) => idx === -1)) {
@@ -100,6 +102,8 @@ const parseTemplateCSV = (text) => {
     const categoria = (row[idxCategoria] || 'Laptops Corporativas').trim();
     const estado = (row[idxEstado] || 'DISPONIBLE').trim().toUpperCase();
     const ubicacion = (row[idxUbicacion] || 'Regional Medellin').trim();
+    const valor_declarado = (idxValor !== -1 && row[idxValor]) ? Number(String(row[idxValor]).replace(/[^0-9]/g, '')) || 3500000 : 3500000;
+    const vida_util_meses = (idxVida !== -1 && row[idxVida]) ? Number(String(row[idxVida]).replace(/[^0-9]/g, '')) || 36 : 36;
 
     if (!placa || !equipo_nombre || !equipo_specs || !serial) {
       continue;
@@ -113,6 +117,8 @@ const parseTemplateCSV = (text) => {
       categoria,
       estado,
       ubicacion,
+      valor_declarado,
+      vida_util_meses,
       asignatario: 'Bodega Centralizada TI',
       ultimo_movimiento: 'Importacion Lote RF-02'
     });
@@ -154,6 +160,8 @@ export default function RegistrarEquipo() {
   const [categoria, setCategoria] = useState('Laptops Corporativas');
   const [estado, setEstado] = useState('DISPONIBLE');
   const [ubicacion, setUbicacion] = useState('Regional Medellin');
+  const [valorDeclarado, setValorDeclarado] = useState(3500000);
+  const [vidaUtilMeses, setVidaUtilMeses] = useState(36);
 
   const runBatchedImport = async (assets) => {
     const chunkSize = 400;
@@ -203,8 +211,8 @@ export default function RegistrarEquipo() {
 
   const handleTemplateDownload = () => {
     const csvTemplate = [
-      'Placa,Equipo,Especificaciones,Serial,Categoria,Estado,Ubicacion',
-      'CL-TI-2001,Lenovo ThinkPad T14s Gen 3,"Intel Core i7 12th Gen - 16GB RAM DDR4 - SSD 512GB NVMe",5CD23489LX,Laptops Corporativas,DISPONIBLE,Regional Medellin'
+      'Placa,Equipo,Especificaciones,Serial,Categoria,Estado,Ubicacion,Valor_Declarado,Vida_Util_Meses',
+      'CL-TI-2001,Lenovo ThinkPad T14s Gen 3,"Intel Core i7 12th Gen - 16GB RAM DDR4 - SSD 512GB NVMe",5CD23489LX,Laptops Corporativas,DISPONIBLE,Regional Medellin,3800000,36'
     ].join('\r\n');
 
     const blob = new Blob(['\uFEFF' + csvTemplate], { type: 'text/csv;charset=utf-8;' });
@@ -242,6 +250,8 @@ export default function RegistrarEquipo() {
           estado: data.estado || '',
           ubicacion: data.ubicacion || '',
           asignatario: data.asignatario || '',
+          valor_declarado: data.valor_declarado ? formatCurrencyCOP(data.valor_declarado) : '$ 0',
+          vida_util_meses: `${data.vida_util_meses || 36} meses`,
           fecha_registro: formatFecha(),
           ultimo_movimiento: data.ultimo_movimiento || '',
           registrado_por: data.registrado_por?.nombre || ''
@@ -345,6 +355,8 @@ export default function RegistrarEquipo() {
         serial,
         categoria,
         estado,
+        valor_declarado: Number(valorDeclarado) || 0,
+        vida_util_meses: Number(vidaUtilMeses) || 36,
         asignatario: 'Bodega Centralizada TI',
         ubicacion,
         ultimo_movimiento: 'Alta Sistema RF-02',
@@ -368,7 +380,7 @@ export default function RegistrarEquipo() {
         placa,
         equipo_nombre: equipoNombre,
         serial,
-        descripcion: 'Alta inicial de activo institucional (RF-02)',
+        descripcion: `Alta inicial de activo institucional (RF-02) • Valor: ${formatCurrencyCOP(valorDeclarado)} • Vida útil: ${vidaUtilMeses}m`,
         responsable: currentUser?.nombre || 'Administrador TI',
         colaborador_nombre: 'Bodega Centralizada TI'
       });
@@ -382,6 +394,7 @@ export default function RegistrarEquipo() {
       setSerial('');
       setEstado('DISPONIBLE');
       setUbicacion('Regional Medellin');
+      setValorDeclarado(3500000);
       setSuccessMsg('Equipo registrado correctamente. Puedes continuar con el siguiente registro en lote.');
       setLoading(false);
     } catch (err) {
@@ -578,6 +591,60 @@ export default function RegistrarEquipo() {
                 </div>
               </div>
 
+              {/* Bloque: Valoración Financiera y Depreciación */}
+              <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+                <div className="flex items-center gap-space-sm mb-space-md pb-space-sm border-b border-surface-container-highest">
+                  <span className="material-symbols-outlined text-primary text-[20px]">payments</span>
+                  <h2 className="font-headline-sm text-body-lg text-primary font-bold">Bloque C: Valor Declarado y Vida Útil (NIIF / Depreciación)</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-space-lg items-start">
+                  <div className="flex flex-col gap-space-xs">
+                    <label className="font-label-sm text-label-sm uppercase text-outline font-bold">
+                      Valor Declarado / Costo de Adquisición (COP) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-outline font-bold text-sm">$</span>
+                      <input 
+                        required 
+                        type="number" 
+                        min="0" 
+                        step="10000"
+                        value={valorDeclarado} 
+                        onChange={(e) => setValorDeclarado(Number(e.target.value) || 0)} 
+                        placeholder="Ej. 3500000" 
+                        className="w-full h-11 pl-8 pr-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm font-bold focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
+                      />
+                    </div>
+                    <span className="font-label-xs text-primary font-semibold mt-1">
+                      Equivalente: {formatCurrencyCOP(valorDeclarado)} COP
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-space-xs">
+                    <label className="font-label-sm text-label-sm uppercase text-outline font-bold">
+                      Vida Útil Contable para Depreciación
+                    </label>
+                    <div className="relative">
+                      <select 
+                        value={vidaUtilMeses} 
+                        onChange={(e) => setVidaUtilMeses(Number(e.target.value))} 
+                        className="w-full h-11 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8"
+                      >
+                        <option value={36}>36 Meses (3 Años - Estándar Computación / Laptops)</option>
+                        <option value={48}>48 Meses (4 Años - Estaciones de Trabajo Fijas)</option>
+                        <option value={60}>60 Meses (5 Años - Servidores, Racks y Redes)</option>
+                        <option value={24}>24 Meses (2 Años - Periféricos y Movilidad)</option>
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">expand_more</span>
+                    </div>
+                    <span className="font-label-xs text-outline mt-1">
+                      Depreciación mensual estimada: {formatCurrencyCOP(vidaUtilMeses > 0 ? Math.round(valorDeclarado / vidaUtilMeses) : 0)} / mes
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Botones de Accion */}
               <div className="bg-surface-container p-space-md rounded-xl flex items-center justify-end gap-space-sm mt-space-sm shadow-sm border border-surface-container-highest">
                 <button type="button" onClick={() => navigate('/inventario')} className="px-space-md h-11 text-outline hover:text-error rounded-lg font-label-md transition-colors" disabled={loading}>
@@ -617,6 +684,7 @@ export default function RegistrarEquipo() {
                         <th className="py-2 px-3">Placa</th>
                         <th className="py-2 px-3">Serial</th>
                         <th className="py-2 px-3">Modelo</th>
+                        <th className="py-2 px-3">Valor Declarado</th>
                         <th className="py-2 px-3">Estado</th>
                         <th className="py-2 px-3">Ubicacion</th>
                         <th className="py-2 px-3">Registrado por</th>
@@ -631,6 +699,9 @@ export default function RegistrarEquipo() {
                           <td className="py-2 px-3 font-label-sm font-bold">{item.placa || 'N/A'}</td>
                           <td className="py-2 px-3 font-body-sm">{item.serial || 'N/A'}</td>
                           <td className="py-2 px-3 font-body-sm">{item.equipo_nombre || 'N/A'}</td>
+                          <td className="py-2 px-3 font-code-mono text-xs font-bold text-success">
+                            {item.valor_declarado ? formatCurrencyCOP(item.valor_declarado) : '$ 0'}
+                          </td>
                           <td className="py-2 px-3 font-body-sm">{item.estado || 'N/A'}</td>
                           <td className="py-2 px-3 font-body-sm">{item.ubicacion || 'N/A'}</td>
                           <td className="py-2 px-3 font-body-sm">{item.registrado_por?.nombre || 'N/A'}</td>
