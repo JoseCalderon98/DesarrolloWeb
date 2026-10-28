@@ -435,17 +435,26 @@ export default function Traslados() {
     <div className="bg-background font-body-md text-on-surface antialiased min-h-screen">
       <Sidebar />
 
-      <div className="pl-72 flex flex-col min-h-screen">
+      <div className="pl-0 lg:pl-72 flex flex-col min-h-screen">
         
         {/* HEADER SUPERIOR */}
-        <header className="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-space-xl flex items-center justify-between gap-space-lg">
-          <div className="flex items-center gap-space-md flex-1">
+        <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-3 sm:px-space-md lg:px-space-xl flex items-center justify-between gap-2 sm:gap-space-lg">
+          <div className="flex items-center gap-2 sm:gap-space-md flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'))}
+              className="lg:hidden p-2 -ml-1 rounded-lg text-on-surface hover:bg-surface-container shrink-0 cursor-pointer"
+              title="Abrir menú"
+              aria-label="Abrir menú"
+            >
+              <span className="material-symbols-outlined text-[24px]">menu</span>
+            </button>
             <span className="material-symbols-outlined text-primary text-[28px]">local_shipping</span>
             <div className="flex flex-col">
               <h1 className="font-headline-sm text-lg text-primary font-black tracking-tight">
                 Traslado de Equipos entre Regionales
               </h1>
-              <span className="text-[11px] text-outline uppercase font-bold tracking-wider">
+              <span className="text-[11px] text-outline uppercase font-bold tracking-wider hidden sm:block">
                 Control Logístico Inter-Sedes • Formato Oficial TI-FO-06
               </span>
             </div>
@@ -474,7 +483,7 @@ export default function Traslados() {
         </header>
 
         {/* CONTENIDO PRINCIPAL */}
-        <main className="flex-1 mt-16 p-space-xl overflow-y-auto">
+        <main className="flex-1 mt-16 p-3 sm:p-6 lg:p-space-xl overflow-y-auto">
           <div className="max-w-5xl mx-auto flex flex-col gap-space-lg">
             
             {/* MENSAJES DE NOTIFICACIÓN */}

@@ -95,17 +95,26 @@ export default function Dashboard() {
   return (
     <div className="bg-background font-body-md text-on-surface antialiased min-h-screen">
       <Sidebar />
-      <div className="pl-72 flex flex-col min-h-screen">
-        {/* HEADER SUPERIOR */}
-        <header className="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-space-xl flex items-center justify-between gap-space-lg">
-          <div className="flex items-center gap-space-lg flex-1">
-            <h1 className="font-headline-sm text-xl text-primary font-black tracking-tight">Dashboard General</h1>
+      <div className="pl-0 lg:pl-72 flex flex-col min-h-screen">
+        {/* HEADER SUPERIOR RESPONSIVE */}
+        <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-3 sm:px-space-md lg:px-space-xl flex items-center justify-between gap-2 sm:gap-space-lg">
+          <div className="flex items-center gap-2 sm:gap-space-lg flex-1 min-w-0">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'))}
+              className="lg:hidden p-2 -ml-1 rounded-lg text-on-surface hover:bg-surface-container shrink-0 cursor-pointer"
+              title="Abrir menú"
+              aria-label="Abrir menú"
+            >
+              <span className="material-symbols-outlined text-[24px]">menu</span>
+            </button>
+            <h1 className="font-headline-sm text-lg sm:text-xl text-primary font-black tracking-tight truncate">Dashboard General</h1>
           </div>
-          <div className="flex items-center gap-space-md shrink-0">
-            <div className="flex items-center gap-space-md pl-space-xs">
+          <div className="flex items-center gap-space-sm sm:gap-space-md shrink-0">
+            <div className="flex items-center gap-space-sm sm:gap-space-md pl-space-xs">
               <div className="flex flex-col text-right hidden sm:flex">
-                <span className="font-label-md text-label-md text-on-surface font-bold">{currentUser?.nombre || 'Funcionario'}</span>
-                <span className="font-label-sm text-label-sm text-secondary font-semibold">{currentUser?.cargo || currentUser?.rol || 'TI'}</span>
+                <span className="font-label-md text-label-md text-on-surface font-bold truncate max-w-[150px]">{currentUser?.nombre || 'Funcionario'}</span>
+                <span className="font-label-sm text-label-sm text-secondary font-semibold truncate max-w-[150px]">{currentUser?.cargo || currentUser?.rol || 'TI'}</span>
               </div>
               <img alt="Perfil" className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20" src={currentUser?.avatar || 'https://i.pravatar.cc/150'} />
               <button onClick={handleLogout} className="hover:bg-error-container hover:text-error text-outline p-1.5 rounded-full transition-colors cursor-pointer" title="Cerrar Sesión">
@@ -116,32 +125,32 @@ export default function Dashboard() {
         </header>
 
         {/* CONTENIDO PRINCIPAL */}
-        <main className="flex-1 mt-16 p-space-xl overflow-y-auto">
+        <main className="flex-1 mt-16 p-3 sm:p-6 lg:p-space-xl overflow-y-auto">
           
-          <div className="mb-space-lg flex items-center justify-between">
+          <div className="mb-space-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="font-headline-sm text-2xl font-black text-on-surface">Resumen Operativo</h2>
-              <p className="text-on-surface-variant text-sm mt-1">Monitoreo global del inventario de activos TI y flujo de custodia.</p>
+              <h2 className="font-headline-sm text-xl sm:text-2xl font-black text-on-surface">Resumen Operativo</h2>
+              <p className="text-on-surface-variant text-xs sm:text-sm mt-0.5 sm:mt-1">Monitoreo global del inventario de activos TI y flujo de custodia.</p>
             </div>
-            <div className="bg-primary/10 text-primary px-space-md py-space-xs rounded-lg flex items-center gap-space-sm font-bold shadow-sm">
-              <span className="material-symbols-outlined text-[20px]">calendar_today</span>
+            <div className="bg-primary/10 text-primary px-space-md py-space-xs rounded-lg flex items-center gap-space-sm font-bold shadow-sm text-xs sm:text-sm">
+              <span className="material-symbols-outlined text-[18px] sm:text-[20px]">calendar_today</span>
               {new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase()}
             </div>
           </div>
 
-          {/* TARJETAS DE KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-lg mb-space-xl">
+          {/* TARJETAS DE KPIs (Responsive: 1 col en 360, 2 cols en 768, 4 cols en 1024) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-space-lg mb-space-xl">
             
             {/* Total Activos */}
-            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-space-lg rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-surface-container-high/50 relative overflow-hidden flex flex-col justify-between">
+            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-4 sm:p-space-lg rounded-[20px] sm:rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-surface-container-high/50 relative overflow-hidden flex flex-col justify-between">
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/20 transition-all duration-500"></div>
               <div className="flex justify-between items-start mb-space-md">
                 <div className="flex flex-col z-10">
                   <span className="font-label-sm uppercase tracking-widest text-outline font-bold mb-1">Total Activos</span>
-                  <span className="font-display-lg text-5xl font-black text-on-surface drop-shadow-sm">{kpis.total}</span>
+                  <span className="font-display-lg text-4xl sm:text-5xl font-black text-on-surface drop-shadow-sm">{kpis.total}</span>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
-                  <span className="material-symbols-outlined text-[28px]">devices</span>
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">devices</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs font-bold text-on-surface-variant mt-2 z-10">
@@ -156,15 +165,15 @@ export default function Dashboard() {
             </div>
 
             {/* Asignados */}
-            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-space-lg rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-surface-container-high/50 relative overflow-hidden flex flex-col justify-between">
+            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-4 sm:p-space-lg rounded-[20px] sm:rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-surface-container-high/50 relative overflow-hidden flex flex-col justify-between">
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-secondary/10 rounded-full blur-3xl pointer-events-none group-hover:bg-secondary/20 transition-all duration-500"></div>
               <div className="flex justify-between items-start mb-space-md">
                 <div className="flex flex-col z-10">
                   <span className="font-label-sm uppercase tracking-widest text-outline font-bold mb-1">En Custodia</span>
-                  <span className="font-display-lg text-5xl font-black text-on-surface drop-shadow-sm">{kpis.asignados}</span>
+                  <span className="font-display-lg text-4xl sm:text-5xl font-black text-on-surface drop-shadow-sm">{kpis.asignados}</span>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
-                  <span className="material-symbols-outlined text-[28px]">person_check</span>
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">person_check</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs font-bold text-on-surface-variant mt-2 z-10">
@@ -176,15 +185,15 @@ export default function Dashboard() {
             </div>
 
             {/* Disponibles */}
-            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-space-lg rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-surface-container-high/50 relative overflow-hidden flex flex-col justify-between">
+            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-4 sm:p-space-lg rounded-[20px] sm:rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-surface-container-high/50 relative overflow-hidden flex flex-col justify-between">
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-success/10 rounded-full blur-3xl pointer-events-none group-hover:bg-success/20 transition-all duration-500"></div>
               <div className="flex justify-between items-start mb-space-md">
                 <div className="flex flex-col z-10">
                   <span className="font-label-sm uppercase tracking-widest text-outline font-bold mb-1">Disponibles</span>
-                  <span className="font-display-lg text-5xl font-black text-on-surface drop-shadow-sm">{kpis.disponibles}</span>
+                  <span className="font-display-lg text-4xl sm:text-5xl font-black text-on-surface drop-shadow-sm">{kpis.disponibles}</span>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-success/20 to-success/5 text-success flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
-                  <span className="material-symbols-outlined text-[28px]">inventory_2</span>
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-success/20 to-success/5 text-success flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">inventory_2</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs font-bold text-on-surface-variant mt-2 z-10">
@@ -196,15 +205,15 @@ export default function Dashboard() {
             </div>
 
             {/* Mantenimiento */}
-            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-space-lg rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-error/20 relative overflow-hidden flex flex-col justify-between">
+            <div className="group bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-4 sm:p-space-lg rounded-[20px] sm:rounded-[24px] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-error/20 relative overflow-hidden flex flex-col justify-between">
               <div className="absolute -right-8 -top-8 w-32 h-32 bg-error/10 rounded-full blur-3xl pointer-events-none group-hover:bg-error/20 transition-all duration-500"></div>
               <div className="flex justify-between items-start mb-space-md">
                 <div className="flex flex-col z-10">
                   <span className="font-label-sm uppercase tracking-widest text-error/80 font-bold mb-1">En Taller</span>
-                  <span className="font-display-lg text-5xl font-black text-error drop-shadow-sm">{kpis.mantenimiento}</span>
+                  <span className="font-display-lg text-4xl sm:text-5xl font-black text-error drop-shadow-sm">{kpis.mantenimiento}</span>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-error/20 to-error/5 text-error flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
-                  <span className="material-symbols-outlined text-[28px]">build</span>
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-error/20 to-error/5 text-error flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-300">
+                  <span className="material-symbols-outlined text-[24px] sm:text-[28px]">build</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs font-bold text-error/70 mt-2 z-10">
@@ -217,17 +226,17 @@ export default function Dashboard() {
 
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
             
-            {/* GRÁFICA DE DISTRIBUCIÓN (Premium) */}
-            <div className="xl:col-span-5 bg-surface-container-lowest p-space-xl rounded-[24px] shadow-sm border border-surface-container-high/40 flex flex-col relative overflow-hidden">
+            {/* GRÁFICA DE DISTRIBUCIÓN (Responsive: 12 cols en 360/768, 5 cols en 1024) */}
+            <div className="lg:col-span-5 bg-surface-container-lowest p-4 sm:p-space-xl rounded-[20px] sm:rounded-[24px] shadow-sm border border-surface-container-high/40 flex flex-col relative overflow-hidden">
               <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-              <h3 className="font-headline-sm text-xl font-black text-on-surface flex items-center gap-2 mb-space-xl z-10">
+              <h3 className="font-headline-sm text-lg sm:text-xl font-black text-on-surface flex items-center gap-2 mb-space-lg sm:mb-space-xl z-10">
                 <span className="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">pie_chart</span>
                 Distribución de Estados
               </h3>
               
-              <div className="flex-1 flex flex-col justify-center gap-space-xl z-10">
+              <div className="flex-1 flex flex-col justify-center gap-space-lg sm:gap-space-xl z-10">
                 <div className="group flex flex-col gap-2 cursor-default">
                   <div className="flex justify-between items-end">
                     <div className="flex items-center gap-2 font-bold text-sm">
@@ -282,22 +291,22 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* ACTIVIDAD RECIENTE (TIMELINE PREMIUM) */}
-            <div className="xl:col-span-7 bg-surface-container-lowest p-space-xl rounded-[24px] shadow-sm border border-surface-container-high/40 flex flex-col relative overflow-hidden">
+            {/* ACTIVIDAD RECIENTE (Responsive: 12 cols en 360/768, 7 cols en 1024) */}
+            <div className="lg:col-span-7 bg-surface-container-lowest p-4 sm:p-space-xl rounded-[20px] sm:rounded-[24px] shadow-sm border border-surface-container-high/40 flex flex-col relative overflow-hidden">
               <div className="absolute right-0 top-0 w-64 h-64 bg-secondary/5 rounded-full blur-3xl pointer-events-none"></div>
               
-              <div className="flex items-center justify-between mb-space-lg z-10">
-                <h3 className="font-headline-sm text-xl font-black text-on-surface flex items-center gap-2">
+              <div className="flex items-center justify-between mb-space-lg z-10 gap-2">
+                <h3 className="font-headline-sm text-lg sm:text-xl font-black text-on-surface flex items-center gap-2">
                   <span className="material-symbols-outlined text-secondary bg-secondary/10 p-2 rounded-lg">history</span>
                   Timeline de Actividad
                 </h3>
-                <button onClick={() => navigate('/historial')} className="px-4 py-2 bg-primary/10 text-primary text-sm font-bold rounded-lg hover:bg-primary hover:text-on-primary transition-all shadow-sm flex items-center gap-1 cursor-pointer">
+                <button onClick={() => navigate('/historial')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 text-primary text-xs sm:text-sm font-bold rounded-lg hover:bg-primary hover:text-on-primary transition-all shadow-sm flex items-center gap-1 cursor-pointer shrink-0">
                   Ver Todo
                   <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                 </button>
               </div>
 
-              <div className="flex flex-col gap-0 overflow-y-auto pr-4 z-10 relative" style={{ maxHeight: '380px' }}>
+              <div className="flex flex-col gap-0 overflow-y-auto pr-2 sm:pr-4 z-10 relative" style={{ maxHeight: '380px' }}>
                 <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-gradient-to-b from-surface-container-high to-transparent"></div>
                 {movimientos.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-outline">
@@ -305,37 +314,37 @@ export default function Dashboard() {
                     <p className="font-bold">Sin actividad reciente</p>
                   </div>
                 ) : (
-                  movimientos.map((mov, i) => (
-                    <div key={mov.id} className="relative flex items-start gap-space-md p-space-sm pl-0 group hover:bg-surface-container-low/50 rounded-xl transition-colors ml-2 mt-2">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold shadow-md z-10 mt-1
+                  movimientos.map((mov) => (
+                    <div key={mov.id} className="relative flex items-start gap-space-sm sm:gap-space-md p-space-sm pl-0 group hover:bg-surface-container-low/50 rounded-xl transition-colors ml-1 sm:ml-2 mt-2">
+                      <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold shadow-md z-10 mt-1
                         ${mov.tipo === 'ENTREGA' ? 'bg-gradient-to-br from-secondary to-[#0284c7]' : 
                           mov.tipo === 'DEVOLUCIÓN' || mov.tipo === 'DEVOLUCION' ? 'bg-gradient-to-br from-error to-[#e11d48]' : 
                           'bg-gradient-to-br from-primary to-[#4338ca]'} 
                         group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}>
-                        <span className="material-symbols-outlined text-[20px]">
+                        <span className="material-symbols-outlined text-[18px] sm:text-[20px]">
                           {mov.tipo === 'ENTREGA' ? 'assignment_ind' : mov.tipo === 'DEVOLUCIÓN' || mov.tipo === 'DEVOLUCION' ? 'keyboard_return' : 'device_hub'}
                         </span>
                       </div>
                       
-                      <div className="flex flex-col flex-1 min-w-0 bg-surface-container-lowest p-space-md rounded-xl border border-surface-container-high/30 shadow-sm group-hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-black text-on-surface text-sm uppercase tracking-wider bg-surface-container-low px-2 py-0.5 rounded text-[11px]">
+                      <div className="flex flex-col flex-1 min-w-0 bg-surface-container-lowest p-3 sm:p-space-md rounded-xl border border-surface-container-high/30 shadow-sm group-hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-1 gap-2">
+                          <span className="font-black text-on-surface uppercase tracking-wider bg-surface-container-low px-2 py-0.5 rounded text-[10px] sm:text-[11px] truncate">
                             {mov.tipo}
                           </span>
-                          <span className="text-xs text-outline font-mono flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">schedule</span>
+                          <span className="text-[11px] sm:text-xs text-outline font-mono flex items-center gap-1 shrink-0">
+                            <span className="material-symbols-outlined text-[13px] sm:text-[14px]">schedule</span>
                             {new Date(mov.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                           </span>
                         </div>
-                        <span className="font-bold text-primary truncate mb-0.5">{mov.placa || mov.acta_numero}</span>
-                        <span className="text-sm text-on-surface-variant line-clamp-2 leading-snug">
+                        <span className="font-bold text-primary truncate mb-0.5 text-xs sm:text-sm">{mov.placa || mov.acta_numero}</span>
+                        <span className="text-xs sm:text-sm text-on-surface-variant line-clamp-2 leading-snug">
                           {mov.descripcion || 'Actualización de estado en el sistema'}
                         </span>
-                        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-surface-container-high/40">
-                          <div className="w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center text-[10px] font-bold text-on-surface">
+                        <div className="flex items-center gap-2 mt-2 sm:mt-3 pt-2 border-t border-surface-container-high/40">
+                          <div className="w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center text-[10px] font-bold text-on-surface shrink-0">
                             {(mov.responsable || 'S').charAt(0)}
                           </div>
-                          <span className="text-xs font-bold text-on-surface-variant">Resp: {mov.responsable || 'Sistema'}</span>
+                          <span className="text-[11px] sm:text-xs font-bold text-on-surface-variant truncate">Resp: {mov.responsable || 'Sistema'}</span>
                         </div>
                       </div>
                     </div>

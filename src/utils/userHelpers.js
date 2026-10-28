@@ -38,6 +38,7 @@ export const initialPPIMembers = [
     nombre: 'Jhonfer Alexis Cruz Gutiérrez',
     cedula: '1.020.455.890',
     email: 'alexis.cruz@casalimpia.com.co',
+    email_personal: 'alexbyc728@gmail.com',
     rol: 'Administrador',
     cargo: 'Ingeniero Administrador TI',
     area: 'Tecnología e Infraestructura',

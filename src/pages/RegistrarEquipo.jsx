@@ -408,9 +408,18 @@ export default function RegistrarEquipo() {
       {/* Sidebar - Mantenido para consistencia UI */}
       <Sidebar />
 
-      <div className="pl-72 flex flex-col min-h-screen">
-        <header className="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-space-xl flex items-center justify-between gap-space-lg">
-          <div className="flex items-center gap-space-lg flex-1 max-w-2xl">
+      <div className="pl-0 lg:pl-72 flex flex-col min-h-screen">
+        <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-xl z-40 shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-3 sm:px-space-md lg:px-space-xl flex items-center justify-between gap-2 sm:gap-space-lg">
+          <div className="flex items-center gap-2 sm:gap-space-lg flex-1 max-w-2xl min-w-0">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'))}
+              className="lg:hidden p-2 -ml-1 rounded-lg text-on-surface hover:bg-surface-container shrink-0 cursor-pointer"
+              title="Abrir menú"
+              aria-label="Abrir menú"
+            >
+              <span className="material-symbols-outlined text-[24px]">menu</span>
+            </button>
             <div className="hidden xl:flex items-center gap-space-xs text-on-surface-variant bg-surface-container px-space-md py-space-xs rounded-full shrink-0">
               <span className="material-symbols-outlined text-[16px] text-secondary">location_on</span>
               <span className="font-label-sm text-label-sm font-semibold truncate">{currentUser?.sede || 'Sede Principal Av. El Dorado #100-80, Bogotá'}</span>
@@ -442,7 +451,7 @@ export default function RegistrarEquipo() {
           </div>
         </header>
 
-        <main className="relative pt-16 flex-1 w-full px-gutter-lg pb-space-xl bg-background">
+        <main className="relative pt-16 flex-1 w-full px-3 sm:px-6 lg:px-gutter-lg pb-space-xl bg-background">
           <div className="flex flex-col w-full max-w-4xl max-w-5xl mx-auto pt-space-lg">
             
             {/* Header / Titulo */}
