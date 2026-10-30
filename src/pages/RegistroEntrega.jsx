@@ -557,6 +557,8 @@ export default function RegistroEntrega() {
         asignatario_id: colaborador.id,
         asignatario_email: colaborador.email,
         asignatario_cc: colaborador.cedula || '',
+        area: colaborador.area || 'Tecnología e Infraestructura (TI)',
+        sede: colaborador.sede || 'Bogotá - Av. El Dorado',
         ubicacion: `${colaborador.sede || 'Sede Principal'} • ${colaborador.area || colaborador.cargo || 'Oficina'}`,
         ultimo_movimiento: `Acta ${actaNumero} entregada a ${colaborador.nombre}`,
         acta_id: actaDocRef.id,
@@ -1618,11 +1620,11 @@ export default function RegistroEntrega() {
               </button>
               
               <button 
-                onClick={() => navigate('/historial')}
+                onClick={() => navigate('/reportes')}
                 className="w-full h-11 bg-surface-container-high text-primary rounded-xl font-label-md text-label-md font-bold flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-all cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">history</span>
-                Ver en el Historial de Movimientos
+                Ver en Reportes y Auditoría
               </button>
 
               <button 

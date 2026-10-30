@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import { getStoredUser } from '../utils/userHelpers';
+import { getStoredUser, AREAS_CORPORATIVAS, REGIONALES_FILTRO, resolveAssetArea, resolveAssetRegionalId } from '../utils/userHelpers';
 import { formatCurrencyCOP, calculateDepreciation } from '../utils/assetHelpers';
 import { generateAndPrintActa, generateAndPrintActaTraslado } from '../utils/actaPrintService';
 import Sidebar from '../components/Sidebar';
@@ -20,6 +20,7 @@ export default function Historial() {
   const [actasTraslado, setActasTraslado] = useState([]);
   const [movimientosGenerales, setMovimientosGenerales] = useState([]);
   const [equipos, setEquipos] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -32,6 +33,8 @@ export default function Historial() {
   // Filtros Pestaña Depreciación
   const [depSearchQuery, setDepSearchQuery] = useState('');
   const [depCategoryFilter, setDepCategoryFilter] = useState('all');
+  const [depAreaFilter, setDepAreaFilter] = useState('all');
+  const [depRegionalFilter, setDepRegionalFilter] = useState('all');
 
   // Filtros Pestaña Dañados
   const [danadosSearchQuery, setDanadosSearchQuery] = useState('');
@@ -95,7 +98,8 @@ export default function Historial() {
       setLoading(false);
     });
 
-    return () => { unsubE(); unsubD(); unsubT(); unsubM(); unsubEq(); };
+    const unsubUsers = onSnapshot(collection(db, "usuarios"), (s) => setUsuarios(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return () => { unsubE(); unsubD(); unsubT(); unsubM(); unsubEq(); unsubUsers(); };
   }, [currentUser?.email, currentUser?.rol]);
 
   // Helper para manejar fechas
@@ -321,13 +325,15 @@ export default function Historial() {
         const cat = String(eq.categoria || '').toLowerCase();
         if (!cat.includes(depCategoryFilter.toLowerCase())) return false;
       }
+      if (depAreaFilter !== 'all' && resolveAssetArea(eq, usuarios) !== depAreaFilter) return false;
+      if (depRegionalFilter !== 'all' && resolveAssetRegionalId(eq) !== depRegionalFilter) return false;
       if (depSearchQuery.trim()) {
         const q = depSearchQuery.toLowerCase().trim();
         return [eq.placa, eq.serial, eq.equipo_nombre, eq.ubicacion].some(v => String(v || '').toLowerCase().includes(q));
       }
       return true;
     });
-  }, [equiposConDepreciacion, depSearchQuery, depCategoryFilter]);
+  }, [equiposConDepreciacion, usuarios, depSearchQuery, depCategoryFilter, depAreaFilter, depRegionalFilter]);
 
   // 3. MOTOR Y MÉTRICAS DE EQUIPOS DAÑADOS Y BAJAS
   const equiposDanados = useMemo(() => {
@@ -421,9 +427,9 @@ export default function Historial() {
 
   const handleExportDepreciacionCSV = () => {
     if (filteredEquiposDepreciacion.length === 0) return alert("No hay equipos para exportar.");
-    const headers = ['Placa', 'Equipo', 'Categoria', 'Ubicacion', 'Estado', 'Valor Declarado (COP)', 'Vida Util (Meses)', 'Meses de Uso', '% Depreciado', 'Depreciacion Acumulada (COP)', 'Valor Residual en Libros (COP)', 'Fecha de Registro'];
+    const headers = ['Placa', 'Equipo', 'Categoria', 'Area / Departamento', 'Ubicacion / Regional', 'Estado', 'Valor Declarado (COP)', 'Vida Util (Meses)', 'Meses de Uso', '% Depreciado', 'Depreciacion Acumulada (COP)', 'Valor Residual en Libros (COP)', 'Fecha de Registro'];
     const rows = filteredEquiposDepreciacion.map(e => [
-      e.placa, e.equipo_nombre, e.categoria, e.ubicacion, e.estado, e.dep.valorDeclarado, e.dep.vidaUtilMeses, e.dep.mesesUso, `${e.dep.porcentajeDepreciado}%`, e.dep.depreciacionAcumulada, e.dep.valorResidual, e.fecha_registro_texto || e.fecha_registro || 'N/A'
+      e.placa, e.equipo_nombre, e.categoria, resolveAssetArea(e, usuarios), e.ubicacion, e.estado, e.dep.valorDeclarado, e.dep.vidaUtilMeses, e.dep.mesesUso, `${e.dep.porcentajeDepreciado}%`, e.dep.depreciacionAcumulada, e.dep.valorResidual, e.fecha_registro_texto || e.fecha_registro || 'N/A'
     ]);
     const csvContent = [headers.join(','), ...rows.map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -916,6 +922,26 @@ export default function Historial() {
                     <option value="servidor">Servidores y Racks</option>
                     <option value="monitor">Monitores</option>
                   </select>
+                  <select
+                    className="h-10 px-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                    value={depAreaFilter}
+                    onChange={(e) => setDepAreaFilter(e.target.value)}
+                  >
+                    <option value="all">Todas las Áreas</option>
+                    {AREAS_CORPORATIVAS.map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="h-10 px-3 bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
+                    value={depRegionalFilter}
+                    onChange={(e) => setDepRegionalFilter(e.target.value)}
+                  >
+                    <option value="all">Todas las Regionales</option>
+                    {REGIONALES_FILTRO.map(r => (
+                      <option key={r.id} value={r.id}>{r.shortLabel}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="text-xs text-outline font-semibold">
                   Norma NIIF: Depreciación en línea recta a 36 meses (3 años)
@@ -957,6 +983,7 @@ export default function Historial() {
                             </td>
                             <td className="py-3 px-4 text-xs font-semibold text-on-surface">
                               {item.ubicacion || 'Regional Medellin'}
+                              <span className="block mt-0.5 text-[11px] text-primary font-bold">{resolveAssetArea(item, usuarios)}</span>
                             </td>
                             <td className="py-3 px-4 text-xs font-code-mono">
                               <strong>{item.dep.mesesUso}</strong> / {item.dep.vidaUtilMeses}m

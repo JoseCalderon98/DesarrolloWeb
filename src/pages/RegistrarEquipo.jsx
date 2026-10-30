@@ -4,12 +4,12 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, limit, onSnapshot, writeBatch, doc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
-import { getStoredUser } from '../utils/userHelpers';
+import { getStoredUser, AREAS_CORPORATIVAS } from '../utils/userHelpers';
 import Sidebar from '../components/Sidebar';
 import { exportToCSV, formatCurrencyCOP } from '../utils/assetHelpers';
 
 const LAST_HARDWARE_KEY = 'rf02_last_hardware_payload';
-const REGIONES_UBICACION = ['Regional Medellin', 'Regional Bogota', 'Regional Barranquilla', 'Regional Pereira'];
+const REGIONES_UBICACION = ['Regional Bogota', 'Regional Medellin', 'Regional Cali', 'Regional Barranquilla', 'Regional Pereira', 'Regional Bucaramanga'];
 
 const normalizeHeader = (value = '') => value
   .toString()
@@ -160,6 +160,7 @@ export default function RegistrarEquipo() {
   const [categoria, setCategoria] = useState('Laptops Corporativas');
   const [estado, setEstado] = useState('DISPONIBLE');
   const [ubicacion, setUbicacion] = useState('Regional Medellin');
+  const [area, setArea] = useState('Tecnología e Infraestructura (TI)');
   const [valorDeclarado, setValorDeclarado] = useState(3500000);
   const [vidaUtilMeses, setVidaUtilMeses] = useState(36);
 
@@ -357,6 +358,7 @@ export default function RegistrarEquipo() {
         estado,
         valor_declarado: Number(valorDeclarado) || 0,
         vida_util_meses: Number(vidaUtilMeses) || 36,
+        area,
         asignatario: 'Bodega Centralizada TI',
         ubicacion,
         ultimo_movimiento: 'Alta Sistema RF-02',
@@ -586,6 +588,17 @@ export default function RegistrarEquipo() {
                     </div>
                   </div>
                   
+                  <div className="flex flex-col gap-space-xs">
+                    <label className="font-label-sm text-label-sm uppercase text-outline font-bold">Área / Departamento</label>
+                    <div className="relative">
+                      <select value={area} onChange={(e) => setArea(e.target.value)} className="w-full h-11 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8">
+                        {AREAS_CORPORATIVAS.map((areaItem) => (
+                          <option key={areaItem} value={areaItem}>{areaItem}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">expand_more</span>
+                    </div>
+                  </div>
                   <div className="flex flex-col gap-space-xs">
                     <label className="font-label-sm text-label-sm uppercase text-outline font-bold">Ubicación Física</label>
                     <div className="relative">

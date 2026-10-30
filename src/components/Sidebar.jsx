@@ -49,9 +49,10 @@ export default function Sidebar() {
 
   const [isEntregaOpen, setIsEntregaOpen] = useState(
     location.pathname === '/entrega-hardware' || 
+    location.pathname === '/nueva-entrega' ||
     location.pathname === '/devoluciones' || 
-    location.pathname === '/historial' ||
-    location.pathname === '/traslados'
+    location.pathname === '/traslados' ||
+    location.pathname === '/traslado-hardware'
   );
 
   const isActive = (path) => location.pathname === path;
@@ -129,22 +130,22 @@ export default function Sidebar() {
               )}
             </a>
             
-            <div className="pt-space-xs">
-              <div 
-                className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg cursor-pointer transition-colors"
-                onClick={() => setIsEntregaOpen(!isEntregaOpen)}
-              >
-                <div className="flex items-center gap-space-md">
-                  <span className="material-symbols-outlined text-[20px]">assignment_return</span>
-                  <span className="font-body-md text-body-md font-semibold text-on-surface">Entrega y Recepción</span>
+            {currentUser?.rol !== 'Empleado' && (
+              <div className="pt-space-xs">
+                <div 
+                  className="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface rounded-lg cursor-pointer transition-colors"
+                  onClick={() => setIsEntregaOpen(!isEntregaOpen)}
+                >
+                  <div className="flex items-center gap-space-md">
+                    <span className="material-symbols-outlined text-[20px]">assignment_return</span>
+                    <span className="font-body-md text-body-md font-semibold text-on-surface">Entrega y Recepción</span>
+                  </div>
+                  <span className="material-symbols-outlined text-[16px] text-outline">
+                    {isEntregaOpen ? 'expand_less' : 'expand_more'}
+                  </span>
                 </div>
-                <span className="material-symbols-outlined text-[16px] text-outline">
-                  {isEntregaOpen ? 'expand_less' : 'expand_more'}
-                </span>
-              </div>
-              {isEntregaOpen && (
-                <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs border-l-2 border-primary/20">
-                  {currentUser?.rol !== 'Empleado' && (
+                {isEntregaOpen && (
+                  <div className="ml-space-lg pl-space-md space-y-space-xs mt-space-xs border-l-2 border-primary/20">
                     <a
                       className={`flex items-center gap-space-sm px-space-md py-space-xs rounded-lg transition-colors cursor-pointer ${isActive('/entrega-hardware') ? 'bg-primary-container text-on-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
                       onClick={() => handleNavigate('/entrega-hardware')}
@@ -152,8 +153,6 @@ export default function Sidebar() {
                       <span className="material-symbols-outlined text-[16px]">post_add</span>
                       <span className="font-body-sm text-body-sm">Nueva Entrega / Acta</span>
                     </a>
-                  )}
-                  {currentUser?.rol !== 'Empleado' && (
                     <a
                       className={`flex items-center gap-space-sm px-space-md py-space-xs rounded-lg transition-colors cursor-pointer ${isActive('/devoluciones') ? 'bg-primary-container text-on-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
                       onClick={() => handleNavigate('/devoluciones')}
@@ -161,8 +160,6 @@ export default function Sidebar() {
                       <span className="material-symbols-outlined text-[16px]">keyboard_return</span>
                       <span className="font-body-sm text-body-sm">Devoluciones</span>
                     </a>
-                  )}
-                  {currentUser?.rol !== 'Empleado' && (
                     <a
                       className={`flex items-center gap-space-sm px-space-md py-space-xs rounded-lg transition-colors cursor-pointer ${isActive('/traslados') ? 'bg-primary-container text-on-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
                       onClick={() => handleNavigate('/traslados')}
@@ -170,36 +167,27 @@ export default function Sidebar() {
                       <span className="material-symbols-outlined text-[16px]">local_shipping</span>
                       <span className="font-body-sm text-body-sm">Traslados Regionales</span>
                     </a>
-                  )}
-                  <a
-                    className={`flex items-center gap-space-sm px-space-md py-space-xs rounded-lg transition-colors cursor-pointer ${isActive('/historial') ? 'bg-primary-container text-on-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
-                    onClick={() => handleNavigate('/historial')}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">history</span>
-                    <span className="font-body-sm text-body-sm">Historial</span>
-                  </a>
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
             
             {currentUser?.rol !== 'Empleado' && (
-              <>
-                <a
-                  className={`flex items-center gap-space-md px-space-md py-space-sm rounded-lg transition-colors cursor-pointer mt-space-sm ${isActive('/usuarios-roles') ? 'bg-primary text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
-                  onClick={() => handleNavigate('/usuarios-roles')}
-                >
-                  <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
-                  <span className="font-body-md text-body-md">Gestión de Usuarios y Roles</span>
-                </a>
-                <a
-                  className={`flex items-center gap-space-md px-space-md py-space-sm rounded-lg transition-colors cursor-pointer ${isActive('/reportes') ? 'bg-primary text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
-                  onClick={() => handleNavigate('/historial')}
-                >
-                  <span className="material-symbols-outlined text-[20px]">verified_user</span>
-                  <span className="font-body-md text-body-md">Reportes y Auditoría</span>
-                </a>
-              </>
+              <a
+                className={`flex items-center gap-space-md px-space-md py-space-sm rounded-lg transition-colors cursor-pointer mt-space-sm ${isActive('/usuarios-roles') ? 'bg-primary text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
+                onClick={() => handleNavigate('/usuarios-roles')}
+              >
+                <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                <span className="font-body-md text-body-md">Gestión de Usuarios y Roles</span>
+              </a>
             )}
+            <a
+              className={`flex items-center gap-space-md px-space-md py-space-sm rounded-lg transition-colors cursor-pointer ${isActive('/reportes') || isActive('/historial') ? 'bg-primary text-on-primary font-bold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
+              onClick={() => handleNavigate('/reportes')}
+            >
+              <span className="material-symbols-outlined text-[20px]">verified_user</span>
+              <span className="font-body-md text-body-md">Reportes y Auditoría</span>
+            </a>
           </nav>
         </div>
         <div className="p-space-md m-space-md bg-surface-container rounded-xl flex items-center gap-space-md">

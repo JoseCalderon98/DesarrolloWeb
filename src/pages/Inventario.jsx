@@ -13,15 +13,17 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { exportToCSV, parseCSV, initialDemoAssets } from '../utils/assetHelpers';
-import { getStoredUser } from '../utils/userHelpers';
+import { getStoredUser, AREAS_CORPORATIVAS, resolveAssetArea, resolveAssetRegionalId } from '../utils/userHelpers';
 import Sidebar from '../components/Sidebar';
 
 export default function Inventario() {
   const currentUser = getStoredUser();
   const [equipos, setEquipos] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -32,7 +34,8 @@ export default function Inventario() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterLocation, setFilterLocation] = useState('all');
+  const [filterLocation, setFilterLocation] = useState(() => searchParams.get('regional') || 'all');
+  const [filterArea, setFilterArea] = useState(() => searchParams.get('area') || 'all');
   const [filterRecent, setFilterRecent] = useState(false);
 
   // Selección múltiple
@@ -122,6 +125,9 @@ export default function Inventario() {
     if (!authReady) return;
     if (currentUser?.rol === 'Empleado') return;
     const qNovedades = query(collection(db, "novedades"));
+    const unsubUsers = onSnapshot(collection(db, "usuarios"), (snap) => {
+      setUsuarios(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
     const unsubNov = onSnapshot(qNovedades,
       (snapshot) => {
         let list = [];
@@ -133,7 +139,7 @@ export default function Inventario() {
       },
       (err) => console.error("Error fetching novedades:", err)
     );
-    return () => unsubNov();
+    return () => { unsubNov(); unsubUsers(); };
   }, [authReady, currentUser]);
 
   // 1c. Historial de Novedades del activo seleccionado
@@ -200,7 +206,7 @@ export default function Inventario() {
         const matchNombre = (item.equipo_nombre || '').toLowerCase().includes(queryLower);
         const matchSpecs = (item.equipo_specs || '').toLowerCase().includes(queryLower);
         const matchAsignatario = (item.asignatario || '').toLowerCase().includes(queryLower);
-        const matchUbicacion = (item.ubicacion || '').toLowerCase().includes(queryLower);
+        const matchUbicacion = (item.ubicacion || '').toLowerCase().includes(queryLower) || resolveAssetArea(item, usuarios).toLowerCase().includes(queryLower);
 
         if (!matchPlaca && !matchSerial && !matchNombre && !matchSpecs && !matchAsignatario && !matchUbicacion) {
           return false;
@@ -226,7 +232,10 @@ export default function Inventario() {
       // Filtro por ubicación / sede
       if (filterLocation !== 'all') {
         const itemLoc = `${item.ubicacion || ''} ${item.sede || ''}`.toLowerCase();
-        if (!itemLoc.includes(filterLocation.toLowerCase())) return false;
+        if (resolveAssetRegionalId(item) !== filterLocation.toLowerCase() && !itemLoc.includes(filterLocation.toLowerCase())) return false;
+      }
+      if (filterArea !== 'all') {
+        if (resolveAssetArea(item, usuarios) !== filterArea) return false;
       }
 
       // Filtro por activos nuevos ingresados este mes
@@ -239,7 +248,7 @@ export default function Inventario() {
 
       return true;
     });
-  }, [equipos, searchQuery, filterCategory, filterStatus, filterLocation, filterRecent, currentMonth, currentYear]);
+  }, [equipos, usuarios, searchQuery, filterCategory, filterStatus, filterLocation, filterArea, filterRecent, currentMonth, currentYear]);
 
   // 4. Paginación
   const totalPages = Math.max(1, Math.ceil(filteredEquipos.length / itemsPerPage));
@@ -261,6 +270,7 @@ export default function Inventario() {
     setFilterCategory('all');
     setFilterStatus('all');
     setFilterLocation('all');
+    setFilterArea('all');
     setFilterRecent(false);
     setCurrentPage(1);
   };
@@ -359,6 +369,7 @@ export default function Inventario() {
         categoria: assetToEdit.categoria || 'Laptops Corporativas',
         estado: assetToEdit.estado || 'DISPONIBLE',
         asignatario: assetToEdit.asignatario || 'Bodega Centralizada TI',
+        area: assetToEdit.area || resolveAssetArea(assetToEdit, usuarios),
         ubicacion: assetToEdit.ubicacion || 'Bogotá - Av. El Dorado',
         ultimo_movimiento: `Modificado ${new Date().toLocaleDateString()}`
       });
@@ -796,7 +807,7 @@ export default function Inventario() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-space-md items-center">
 
                 {/* Buscador Universal */}
-                <div className="md:col-span-4 relative">
+                <div className="md:col-span-2 relative">
                   <label className="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold" htmlFor="search-input">
                     Buscador Universal
                   </label>
@@ -877,7 +888,29 @@ export default function Inventario() {
                       <option value="medellin">Medellín - Poblado</option>
                       <option value="cali">Cali - Valle del Lili</option>
                       <option value="barranquilla">Barranquilla - Prado</option>
+                      <option value="pereira">Pereira - Circunvalar</option>
                       <option value="bucaramanga">Bucaramanga - Cabecera</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
+                  </div>
+                </div>
+
+                {/* Filtro por Área / Departamento */}
+                <div className="md:col-span-2">
+                  <label className="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold" htmlFor="filter-area">
+                    Área / Depto.
+                  </label>
+                  <div className="relative">
+                    <select
+                      className="w-full h-9 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8"
+                      id="filter-area"
+                      value={filterArea}
+                      onChange={(e) => setFilterArea(e.target.value)}
+                    >
+                      <option value="all">Todas las Áreas</option>
+                      {AREAS_CORPORATIVAS.map(a => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
                     </select>
                     <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
                   </div>
@@ -954,7 +987,14 @@ export default function Inventario() {
                     </span>
                   )}
 
-                  {searchQuery === '' && filterCategory === 'all' && filterStatus === 'all' && filterLocation === 'all' && !filterRecent && (
+                  {filterArea !== 'all' && (
+                    <span className="inline-flex items-center gap-1 bg-primary/15 text-primary px-2 py-0.5 rounded-full font-code-mono text-[11px] font-bold">
+                      Área: {filterArea}
+                      <span onClick={() => setFilterArea('all')} className="material-symbols-outlined text-[12px] cursor-pointer hover:text-error">close</span>
+                    </span>
+                  )}
+
+                  {searchQuery === '' && filterCategory === 'all' && filterStatus === 'all' && filterLocation === 'all' && filterArea === 'all' && !filterRecent && (
                     <span className="text-outline text-[12px] italic">Ningún filtro activo (Mostrando todos los registros)</span>
                   )}
                 </div>
@@ -1211,6 +1251,9 @@ export default function Inventario() {
                                 <span className={`font-body-sm text-body-sm ${equipo.estado === 'MANTENIMIENTO' ? 'text-error font-medium' : 'text-outline'
                                   }`}>
                                   {equipo.ubicacion || 'Bodega Principal'}
+                                  <span className="block mt-1 w-fit px-2 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-[11px] font-semibold">
+                                    {resolveAssetArea(equipo, usuarios)}
+                                  </span>
                                 </span>
                               </div>
                             </td>
@@ -1575,7 +1618,7 @@ export default function Inventario() {
                         {selectedAssetForDetail.ubicacion || 'Sede Principal Bogotá'}
                       </span>
                       <span className="font-code-mono text-code-mono text-[11px] text-primary">
-                        Estado: {selectedAssetForDetail.estado}
+                        Estado: {selectedAssetForDetail.estado} • Área: {resolveAssetArea(selectedAssetForDetail, usuarios)}
                       </span>
                     </div>
                   </div>
@@ -1914,7 +1957,24 @@ export default function Inventario() {
                     onChange={(e) => setAssetToEdit({ ...assetToEdit, ubicacion: e.target.value })}
                   />
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-label-sm font-bold text-outline uppercase mb-1">Área / Departamento Cargado</label>
+                  <select
+                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                    value={assetToEdit.area || resolveAssetArea(assetToEdit, usuarios)}
+                    onChange={(e) => setAssetToEdit({ ...assetToEdit, area: e.target.value })}
+                  >
+                    {AREAS_CORPORATIVAS.map(areaName => (
+                      <option key={areaName} value={areaName}>{areaName}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="hidden"><input
+                  />
+                </div>
               </div>
+
+
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-surface-container">
                 <button
@@ -2000,6 +2060,8 @@ export default function Inventario() {
                   </div>
                 </div>
               )}
+
+
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-surface-container">
                 <button

@@ -13,7 +13,16 @@ import {
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
-import { ROLES, ROLE_INFO, initialPPIMembers, getStoredUser, setStoredUser } from '../utils/userHelpers';
+import { 
+  ROLES, 
+  ROLE_INFO, 
+  AREAS_CORPORATIVAS, 
+  SEDES_CORPORATIVAS,
+  normalizeArea,
+  initialPPIMembers, 
+  getStoredUser, 
+  setStoredUser 
+} from '../utils/userHelpers';
 import Sidebar from '../components/Sidebar';
 
 export default function UsuariosRoles() {
@@ -28,6 +37,7 @@ export default function UsuariosRoles() {
   // Filtros
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
+  const [filterArea, setFilterArea] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSede, setFilterSede] = useState('all');
 
@@ -43,8 +53,8 @@ export default function UsuariosRoles() {
     email: '',
     rol: 'Soporte TI',
     cargo: '',
-    area: 'Tecnología e Infraestructura',
-    sede: 'Bogotá - Av. El Dorado',
+    area: AREAS_CORPORATIVAS[0],
+    sede: SEDES_CORPORATIVAS[0],
     estado: 'ACTIVO'
   });
 
@@ -96,18 +106,20 @@ export default function UsuariosRoles() {
         const matchCedula = (user.cedula || '').toLowerCase().includes(qLower);
         const matchEmail = (user.email || '').toLowerCase().includes(qLower);
         const matchCargo = (user.cargo || '').toLowerCase().includes(qLower);
-        if (!matchNombre && !matchCedula && !matchEmail && !matchCargo) return false;
+        const matchArea = (user.area || '').toLowerCase().includes(qLower);
+        if (!matchNombre && !matchCedula && !matchEmail && !matchCargo && !matchArea) return false;
       }
 
       if (filterRole !== 'all' && user.rol !== filterRole) return false;
+      if (filterArea !== 'all' && normalizeArea(user.area) !== filterArea) return false;
       if (filterStatus !== 'all' && user.estado !== filterStatus) return false;
       if (filterSede !== 'all' && !(user.sede || '').toLowerCase().includes(filterSede.toLowerCase())) return false;
 
       return true;
     });
-  }, [usuarios, searchQuery, filterRole, filterStatus, filterSede]);
+  }, [usuarios, searchQuery, filterRole, filterArea, filterStatus, filterSede]);
 
-  // Cargar los 4 Integrantes del PPI a Firestore
+  // Cargar los Integrantes del PPI a Firestore
   const handleSeedPPIMembers = async () => {
     try {
       setIsProcessing(true);
@@ -150,8 +162,8 @@ export default function UsuariosRoles() {
         email: '',
         rol: 'Soporte TI',
         cargo: '',
-        area: 'Tecnología e Infraestructura',
-        sede: 'Bogotá - Av. El Dorado',
+        area: AREAS_CORPORATIVAS[0],
+        sede: SEDES_CORPORATIVAS[0],
         estado: 'ACTIVO'
       });
       setSuccessMsg(`Usuario ${newUser.nombre} registrado con éxito.`);
@@ -176,8 +188,8 @@ export default function UsuariosRoles() {
         email: userToEdit.email || '',
         rol: userToEdit.rol || 'Empleado',
         cargo: userToEdit.cargo || '',
-        area: userToEdit.area || '',
-        sede: userToEdit.sede || '',
+        area: userToEdit.area || AREAS_CORPORATIVAS[0],
+        sede: userToEdit.sede || SEDES_CORPORATIVAS[0],
         estado: userToEdit.estado || 'ACTIVO',
         updatedAt: serverTimestamp()
       });
@@ -188,7 +200,7 @@ export default function UsuariosRoles() {
       }
 
       setUserToEdit(null);
-      setSuccessMsg("Rol y datos de usuario actualizados correctamente.");
+      setSuccessMsg("Rol, área y datos de usuario actualizados correctamente.");
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
       alert("Error al actualizar usuario: " + err.message);
@@ -249,7 +261,7 @@ export default function UsuariosRoles() {
               <span className="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
               <input 
                 className="w-full h-9 pl-9 pr-space-md bg-surface-container-lowest text-on-surface rounded-lg font-body-sm text-body-sm placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]" 
-                placeholder="Buscar usuarios por cédula, nombre o correo..." 
+                placeholder="Buscar usuarios por cédula, nombre, área o correo..." 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -306,7 +318,7 @@ export default function UsuariosRoles() {
                   Gestión de Usuarios y Roles
                 </h1>
                 <p className="font-body-md text-body-md text-on-surface-variant max-w-3xl">
-                  Administración centralizada de identidades, privilegios de acceso y asignación de perfiles operativos de CASALIMPIA S.A. Conforme a requerimientos del PPI y normativa ISO/IEC 27001.
+                  Administración centralizada de identidades, privilegios de acceso, áreas organizacionales y asignación de perfiles operativos de CASALIMPIA S.A. Conforme a requerimientos del PPI y normativa ISO/IEC 27001.
                 </p>
               </div>
 
@@ -409,7 +421,7 @@ export default function UsuariosRoles() {
             <div className="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm mb-space-lg flex flex-col gap-space-md">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-space-md items-center">
                 
-                <div className="md:col-span-5 relative">
+                <div className="md:col-span-3 relative">
                   <label className="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold">
                     Búsqueda de Usuario
                   </label>
@@ -417,7 +429,7 @@ export default function UsuariosRoles() {
                     <span className="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
                     <input 
                       className="w-full h-9 pl-9 pr-space-md bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm" 
-                      placeholder="Buscar por nombre, cédula, correo o cargo..." 
+                      placeholder="Nombre, cédula o cargo..." 
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -426,6 +438,44 @@ export default function UsuariosRoles() {
                 </div>
 
                 <div className="md:col-span-3">
+                  <label className="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold">
+                    Área / Departamento
+                  </label>
+                  <div className="relative">
+                    <select 
+                      className="w-full h-9 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8"
+                      value={filterArea}
+                      onChange={(e) => setFilterArea(e.target.value)}
+                    >
+                      <option value="all">Todas las Áreas ({AREAS_CORPORATIVAS.length})</option>
+                      {AREAS_CORPORATIVAS.map(a => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold">
+                    Sede / Regional
+                  </label>
+                  <div className="relative">
+                    <select 
+                      className="w-full h-9 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8"
+                      value={filterSede}
+                      onChange={(e) => setFilterSede(e.target.value)}
+                    >
+                      <option value="all">Todas las Sedes</option>
+                      {SEDES_CORPORATIVAS.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
                   <label className="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold">
                     Rol Asignado (RF-10)
                   </label>
@@ -444,29 +494,12 @@ export default function UsuariosRoles() {
                   </div>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1 font-bold">
-                    Estado
-                  </label>
-                  <div className="relative">
-                    <select 
-                      className="w-full h-9 px-space-md appearance-none bg-surface-container-low text-on-surface rounded-lg font-body-sm text-body-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-sm cursor-pointer pr-8"
-                      value={filterStatus}
-                      onChange={(e) => setFilterStatus(e.target.value)}
-                    >
-                      <option value="all">Todos los Estados</option>
-                      <option value="ACTIVO">🟢 ACTIVO</option>
-                      <option value="INACTIVO">🔴 INACTIVO</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">expand_more</span>
-                  </div>
-                </div>
-
                 <div className="md:col-span-2 flex items-end justify-end pt-5">
                   <button 
                     onClick={() => {
                       setSearchQuery('');
                       setFilterRole('all');
+                      setFilterArea('all');
                       setFilterStatus('all');
                       setFilterSede('all');
                     }}
@@ -494,8 +527,8 @@ export default function UsuariosRoles() {
                       <th className="py-space-md px-space-lg font-bold">Colaborador / Usuario</th>
                       <th className="py-space-md px-space-md font-bold">Documento (C.C.)</th>
                       <th className="py-space-md px-space-md font-bold">Rol en Sistema</th>
-                      <th className="py-space-md px-space-lg font-bold">Cargo y Área</th>
-                      <th className="py-space-md px-space-md font-bold">Sede</th>
+                      <th className="py-space-md px-space-lg font-bold">Cargo y Área / Departamento</th>
+                      <th className="py-space-md px-space-md font-bold">Sede / Regional</th>
                       <th className="py-space-md px-space-md font-bold">Estado</th>
                       <th className="py-space-md px-space-md text-right font-bold pr-space-lg">Acciones</th>
                     </tr>
@@ -523,7 +556,7 @@ export default function UsuariosRoles() {
                             <span className="material-symbols-outlined text-[48px] text-outline">group_off</span>
                             <p className="font-bold text-label-lg text-on-surface">No hay usuarios registrados en la base de datos</p>
                             <p className="text-outline text-body-sm">
-                              Carga los 4 integrantes oficiales de su proyecto integrador (PPI) de CASALIMPIA para comenzar a gestionar los roles.
+                              Carga los integrantes oficiales de su proyecto integrador (PPI) de CASALIMPIA para comenzar a gestionar los roles.
                             </p>
                             <button 
                               onClick={handleSeedPPIMembers}
@@ -546,6 +579,7 @@ export default function UsuariosRoles() {
                     ) : (
                       filteredUsuarios.map((u) => {
                         const roleMeta = ROLE_INFO[u.rol] || ROLE_INFO['Empleado'];
+                        const areaNorm = normalizeArea(u.area);
                         return (
                           <tr key={u.id} className="hover:bg-surface-container transition-colors group">
                             <td className="py-space-md px-space-lg">
@@ -571,12 +605,15 @@ export default function UsuariosRoles() {
                               </span>
                             </td>
                             <td className="py-space-md px-space-lg">
-                              <div className="flex flex-col">
+                              <div className="flex flex-col gap-0.5">
                                 <span className="font-label-md font-semibold text-on-surface">{u.cargo || 'Funcionario'}</span>
-                                <span className="font-body-sm text-outline text-[12px]">{u.area || 'General'}</span>
+                                <span className="inline-flex items-center gap-1 w-fit px-2 py-0.5 rounded bg-primary/10 text-primary font-label-sm text-[11px] font-semibold">
+                                  <span className="material-symbols-outlined text-[12px]">apartment</span>
+                                  {areaNorm}
+                                </span>
                               </div>
                             </td>
-                            <td className="py-space-md px-space-md text-on-surface-variant text-body-sm">
+                            <td className="py-space-md px-space-md text-on-surface-variant text-body-sm font-medium">
                               {u.sede}
                             </td>
                             <td className="py-space-md px-space-md">
@@ -590,9 +627,13 @@ export default function UsuariosRoles() {
                             <td className="py-space-md px-space-md text-right pr-space-lg">
                               <div className="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
                                 <button 
-                                  onClick={() => setUserToEdit(u)}
+                                  onClick={() => setUserToEdit({
+                                    ...u,
+                                    area: normalizeArea(u.area),
+                                    sede: SEDES_CORPORATIVAS.includes(u.sede) ? u.sede : SEDES_CORPORATIVAS[0]
+                                  })}
                                   className="p-1.5 rounded-md hover:bg-surface-container-high text-primary transition-colors cursor-pointer" 
-                                  title="Editar Rol y Usuario (RF-10)"
+                                  title="Editar Rol, Área y Usuario (RF-10)"
                                 >
                                   <span className="material-symbols-outlined text-[18px]">edit</span>
                                 </button>
@@ -624,9 +665,9 @@ export default function UsuariosRoles() {
             <div className="flex items-center gap-space-md font-code-mono text-code-mono text-outline-variant">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                Control de Roles Activo
+                Control de Roles y Áreas Activo
               </span>
-              <span>v2.5.0</span>
+              <span>v2.6.0</span>
             </div>
           </div>
         </footer>
@@ -681,7 +722,7 @@ export default function UsuariosRoles() {
                 <div>
                   <label className="block text-label-sm font-bold text-outline uppercase mb-1">Rol Asignado (RF-10)</label>
                   <select 
-                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                     value={newUser.rol}
                     onChange={(e) => setNewUser({ ...newUser, rol: e.target.value })}
                   >
@@ -717,28 +758,28 @@ export default function UsuariosRoles() {
                 </div>
                 <div>
                   <label className="block text-label-sm font-bold text-outline uppercase mb-1">Área / Departamento</label>
-                  <input 
-                    type="text"
-                    placeholder="Ej. Tecnología e Infraestructura"
-                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  <select 
+                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                     value={newUser.area}
                     onChange={(e) => setNewUser({ ...newUser, area: e.target.value })}
-                  />
+                  >
+                    {AREAS_CORPORATIVAS.map(areaName => (
+                      <option key={areaName} value={areaName}>{areaName}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-label-sm font-bold text-outline uppercase mb-1">Sede Asignada</label>
                 <select 
-                  className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                   value={newUser.sede}
                   onChange={(e) => setNewUser({ ...newUser, sede: e.target.value })}
                 >
-                  <option value="Bogotá - Av. El Dorado">Bogotá - Av. El Dorado</option>
-                  <option value="Medellín - Poblado">Medellín - Poblado</option>
-                  <option value="Cali - Valle del Lili">Cali - Valle del Lili</option>
-                  <option value="Barranquilla - Prado">Barranquilla - Prado</option>
-                  <option value="Bucaramanga - Cabecera">Bucaramanga - Cabecera</option>
+                  {SEDES_CORPORATIVAS.map(sedeName => (
+                    <option key={sedeName} value={sedeName}>{sedeName}</option>
+                  ))}
                 </select>
               </div>
 
@@ -801,7 +842,7 @@ export default function UsuariosRoles() {
                 <div>
                   <label className="block text-label-sm font-bold text-outline uppercase mb-1">Rol en Sistema</label>
                   <select 
-                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary font-bold text-primary"
+                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary font-bold text-primary cursor-pointer"
                     value={userToEdit.rol || 'Empleado'}
                     onChange={(e) => setUserToEdit({ ...userToEdit, rol: e.target.value })}
                   >
@@ -813,7 +854,7 @@ export default function UsuariosRoles() {
                 <div>
                   <label className="block text-label-sm font-bold text-outline uppercase mb-1">Estado de Acceso</label>
                   <select 
-                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                     value={userToEdit.estado || 'ACTIVO'}
                     onChange={(e) => setUserToEdit({ ...userToEdit, estado: e.target.value })}
                   >
@@ -834,24 +875,30 @@ export default function UsuariosRoles() {
                   />
                 </div>
                 <div>
-                  <label className="block text-label-sm font-bold text-outline uppercase mb-1">Área</label>
-                  <input 
-                    type="text"
-                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    value={userToEdit.area || ''}
+                  <label className="block text-label-sm font-bold text-outline uppercase mb-1">Área / Departamento</label>
+                  <select 
+                    className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                    value={userToEdit.area || AREAS_CORPORATIVAS[0]}
                     onChange={(e) => setUserToEdit({ ...userToEdit, area: e.target.value })}
-                  />
+                  >
+                    {AREAS_CORPORATIVAS.map(areaName => (
+                      <option key={areaName} value={areaName}>{areaName}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-label-sm font-bold text-outline uppercase mb-1">Sede</label>
-                <input 
-                  type="text"
-                  className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                  value={userToEdit.sede || ''}
+                <label className="block text-label-sm font-bold text-outline uppercase mb-1">Sede Asignada</label>
+                <select 
+                  className="w-full h-9 px-3 bg-surface-container-low rounded-lg text-body-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                  value={userToEdit.sede || SEDES_CORPORATIVAS[0]}
                   onChange={(e) => setUserToEdit({ ...userToEdit, sede: e.target.value })}
-                />
+                >
+                  {SEDES_CORPORATIVAS.map(sedeName => (
+                    <option key={sedeName} value={sedeName}>{sedeName}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-surface-container">

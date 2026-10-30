@@ -435,6 +435,7 @@ export default function Devoluciones() {
         asignatario_cc: '',
         asignatario_email: '',
         asignatario_id: '',
+        area: 'Tecnología e Infraestructura (TI)',
         ubicacion: nuevaUbicacion,
         ultimo_movimiento: `Reintegro Acta ${actaNumero} (${colaboradorAsignado.nombre})`,
         ultima_devolucion_acta: actaNumero,
@@ -479,7 +480,7 @@ export default function Devoluciones() {
       setSuccessMsg(`¡Reintegro completado! Acta ${actaNumero} registrada en Firestore y en el Historial.`);
 
       setTimeout(() => {
-        navigate('/historial');
+        navigate('/reportes');
       }, 2500);
 
     } catch (err) {
@@ -544,12 +545,12 @@ export default function Devoluciones() {
 
           <div className="flex items-center gap-space-md shrink-0">
             <button 
-              onClick={() => navigate('/historial')}
+              onClick={() => navigate('/reportes')}
               className="h-9 px-space-md flex items-center gap-space-xs rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors cursor-pointer font-label-sm text-label-sm font-bold"
-              title="Ir al Historial de Movimientos"
+              title="Ir a Reportes y Auditoría"
             >
               <span className="material-symbols-outlined text-[18px]">history</span>
-              <span>Historial</span>
+              <span>Reportes y Auditoría</span>
             </button>
 
             <div className="h-6 w-px bg-surface-container-highest"></div>
@@ -1164,11 +1165,11 @@ export default function Devoluciones() {
               </button>
               
               <button 
-                onClick={() => navigate('/historial')}
+                onClick={() => navigate('/reportes')}
                 className="w-full h-11 bg-surface-container-high text-primary rounded-xl font-label-md text-label-md font-bold flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-all cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">history</span>
-                Ver en el Historial de Movimientos
+                Ver en Reportes y Auditoría
               </button>
 
               <button 

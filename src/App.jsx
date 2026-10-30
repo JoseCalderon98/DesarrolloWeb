@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Inventario from './pages/Inventario'
@@ -25,8 +25,8 @@ function App() {
           <Route path="/devoluciones" element={<Devoluciones />} />
           <Route path="/traslados" element={<Traslados />} />
           <Route path="/traslado-hardware" element={<Traslados />} />
-          <Route path="/historial" element={<Historial />} />
           <Route path="/reportes" element={<Historial />} />
+          <Route path="/historial" element={<Navigate to="/reportes" replace />} />
           <Route path="/usuarios-roles" element={<UsuariosRoles />} />
           <Route path="/usuarios" element={<UsuariosRoles />} />
         </Routes>

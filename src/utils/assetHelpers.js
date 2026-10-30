@@ -1,4 +1,5 @@
 // Utilidades para exportación, importación y datos demo del Inventario SGI CASALIMPIA
+import { resolveAssetArea } from './userHelpers';
 
 /**
  * Formatea un valor numérico a moneda colombiana (COP)
@@ -95,7 +96,8 @@ export function exportToCSV(equipos, filename = 'inventario_activos_casalimpia.c
     'Categoria',
     'Estado',
     'Asignatario',
-    'Ubicacion',
+    'Area / Departamento',
+    'Ubicacion / Regional',
     'Valor Declarado (COP)',
     'Depreciacion Acumulada (COP)',
     'Valor Residual en Libros (COP)',
@@ -128,6 +130,7 @@ export function exportToCSV(equipos, filename = 'inventario_activos_casalimpia.c
       e.categoria || '',
       e.estado || '',
       e.asignatario || '',
+      resolveAssetArea(e),
       e.ubicacion || '',
       dep.valorDeclarado,
       dep.depreciacionAcumulada,
@@ -205,6 +208,7 @@ export function parseCSV(csvText) {
         categoria: row[4] || 'Laptops Corporativas',
         estado: (row[5] || 'DISPONIBLE').toUpperCase(),
         asignatario: row[6] || 'Bodega Centralizada TI',
+        area: 'Tecnología e Infraestructura (TI)',
         ubicacion: row[7] || 'Regional Medellin',
         valor_declarado: parsedValor > 0 ? parsedValor : 3500000,
         vida_util_meses: 36,
@@ -228,6 +232,7 @@ export const initialDemoAssets = [
     categoria: 'Estaciones de Escritorio',
     estado: 'DISPONIBLE',
     asignatario: 'Bodega Centralizada TI',
+    area: 'Tecnología e Infraestructura (TI)',
     ubicacion: 'Regional Bogota',
     valor_declarado: 2950000,
     vida_util_meses: 36,
@@ -242,6 +247,7 @@ export const initialDemoAssets = [
     estado: 'ASIGNADO',
     asignatario: 'Santiago Jiménez Castro',
     asignatario_email: 'santiago.jimenez@casalimpia.com.co',
+    area: 'Talento Humano / Recursos Humanos',
     ubicacion: 'Regional Bogota',
     valor_declarado: 4800000,
     vida_util_meses: 36,
@@ -255,6 +261,7 @@ export const initialDemoAssets = [
     categoria: 'Laptops Corporativas',
     estado: 'DISPONIBLE',
     asignatario: 'Bodega Centralizada TI',
+    area: 'Tecnología e Infraestructura (TI)',
     ubicacion: 'Regional Medellin',
     valor_declarado: 3600000,
     vida_util_meses: 36,
@@ -269,6 +276,7 @@ export const initialDemoAssets = [
     estado: 'MANTENIMIENTO',
     condicion_fisica: '4/10 Dañado (Requiere Reparación)',
     asignatario: 'Taller Central de Soporte',
+    area: 'Tecnología e Infraestructura (TI)',
     ubicacion: 'Regional Bogota',
     valor_declarado: 8900000,
     vida_util_meses: 36,
@@ -282,6 +290,7 @@ export const initialDemoAssets = [
     categoria: 'Servidores y Racks',
     estado: 'ASIGNADO',
     asignatario: 'Infraestructura y Redes',
+    area: 'Tecnología e Infraestructura (TI)',
     ubicacion: 'Regional Bogota',
     valor_declarado: 18500000,
     vida_util_meses: 60,
@@ -296,10 +305,10 @@ export const initialDemoAssets = [
     estado: 'ASIGNADO',
     asignatario: 'Juan David Gutiérrez Zuleta',
     asignatario_email: 'juan.gutierrez@casalimpia.com.co',
+    area: 'Operaciones y Servicios Generales',
     ubicacion: 'Regional Medellin',
     valor_declarado: 850000,
     vida_util_meses: 36,
     ultimo_movimiento: 'Entrega Acta #05-2026'
   }
 ];
-

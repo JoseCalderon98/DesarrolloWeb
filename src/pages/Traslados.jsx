@@ -462,7 +462,7 @@ export default function Traslados() {
 
           <div className="flex items-center gap-space-md shrink-0">
             <button
-              onClick={() => navigate('/historial')}
+              onClick={() => navigate('/reportes')}
               className="h-9 px-space-md flex items-center gap-space-xs rounded-lg text-primary bg-primary/10 hover:bg-primary/20 transition-colors font-label-sm font-bold shadow-xs cursor-pointer"
             >
               <span className="material-symbols-outlined text-[18px]">verified_user</span>

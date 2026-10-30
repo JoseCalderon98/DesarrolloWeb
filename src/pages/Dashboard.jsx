@@ -3,16 +3,38 @@ import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestor
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { getStoredUser } from '../utils/userHelpers';
+import { 
+  getStoredUser, 
+  AREAS_CORPORATIVAS, 
+  REGIONALES_FILTRO, 
+  resolveAssetArea, 
+  resolveAssetRegionalId 
+} from '../utils/userHelpers';
+import { formatCurrencyCOP, getEstimatedPriceByCategory } from '../utils/assetHelpers';
 import Sidebar from '../components/Sidebar';
+
+const AREA_ICONS = {
+  'Talento Humano / Recursos Humanos': 'diversity_3',
+  'Tecnología e Infraestructura (TI)': 'dns',
+  'Operaciones y Servicios Generales': 'engineering',
+  'Contabilidad y Finanzas': 'account_balance',
+  'Comercial y Mercadeo': 'campaign',
+  'Compras, Logística y Bodega': 'inventory',
+  'Seguridad y Salud en el Trabajo (SST / HSEQ)': 'health_and_safety',
+  'Gerencia y Dirección Administrativa': 'corporate_fare'
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const currentUser = getStoredUser();
 
   const [equipos, setEquipos] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [movimientos, setMovimientos] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Filtro interactivo de Regional en el panel de segmentación por Áreas
+  const [selectedRegional, setSelectedRegional] = useState('all');
 
   const handleLogout = async () => {
     try {
@@ -30,6 +52,12 @@ export default function Dashboard() {
       setEquipos(list);
     });
 
+    const unsubUsuarios = onSnapshot(collection(db, "usuarios"), (snapshot) => {
+      const list = [];
+      snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+      setUsuarios(list);
+    });
+
     const qMovs = query(collection(db, "movimientos"), orderBy("fecha", "desc"), limit(10));
     const unsubMovs = onSnapshot(qMovs, (snapshot) => {
       const list = [];
@@ -40,6 +68,7 @@ export default function Dashboard() {
 
     return () => {
       unsubEquipos();
+      unsubUsuarios();
       unsubMovs();
     };
   }, []);
@@ -80,6 +109,63 @@ export default function Dashboard() {
 
     return { total, asignados, disponibles, mantenimiento, bajas, entregasMes, devolucionesMes, altasMes };
   }, [equipos, movimientos]);
+
+  // Segmentación por Regional y por Área / Departamento
+  const segmentacionDatos = useMemo(() => {
+    // Conteo por cada regional
+    const conteoPorRegional = {};
+    REGIONALES_FILTRO.forEach(r => {
+      conteoPorRegional[r.id] = 0;
+    });
+
+    equipos.forEach(eq => {
+      const regId = resolveAssetRegionalId(eq);
+      conteoPorRegional[regId] = (conteoPorRegional[regId] || 0) + 1;
+    });
+
+    // Filtrar equipos por la regional seleccionada
+    const equiposEnRegional = selectedRegional === 'all'
+      ? equipos
+      : equipos.filter(eq => resolveAssetRegionalId(eq) === selectedRegional);
+
+    // Agrupar por las 8 áreas corporativas
+    const mapaAreas = {};
+    AREAS_CORPORATIVAS.forEach(areaName => {
+      mapaAreas[areaName] = {
+        area: areaName,
+        total: 0,
+        asignados: 0,
+        disponibles: 0,
+        mantenimiento: 0,
+        valorTotal: 0
+      };
+    });
+
+    equiposEnRegional.forEach(eq => {
+      const areaResuelta = resolveAssetArea(eq, usuarios);
+      const targetArea = mapaAreas[areaResuelta] ? areaResuelta : 'Tecnología e Infraestructura (TI)';
+      const bucket = mapaAreas[targetArea];
+
+      bucket.total += 1;
+      if (eq.estado === 'ASIGNADO') bucket.asignados += 1;
+      else if (eq.estado === 'DISPONIBLE' || !eq.estado) bucket.disponibles += 1;
+      else if (eq.estado === 'MANTENIMIENTO') bucket.mantenimiento += 1;
+
+      const valor = Number(eq.valor_declarado) > 0
+        ? Number(eq.valor_declarado)
+        : getEstimatedPriceByCategory(eq.categoria);
+      bucket.valorTotal += valor;
+    });
+
+    const listaAreas = Object.values(mapaAreas).sort((a, b) => b.total - a.total);
+    const totalEquiposFiltrados = equiposEnRegional.length;
+
+    return {
+      conteoPorRegional,
+      listaAreas,
+      totalEquiposFiltrados
+    };
+  }, [equipos, usuarios, selectedRegional]);
 
   if (loading) {
     return (
@@ -130,7 +216,7 @@ export default function Dashboard() {
           <div className="mb-space-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h2 className="font-headline-sm text-xl sm:text-2xl font-black text-on-surface">Resumen Operativo</h2>
-              <p className="text-on-surface-variant text-xs sm:text-sm mt-0.5 sm:mt-1">Monitoreo global del inventario de activos TI y flujo de custodia.</p>
+              <p className="text-on-surface-variant text-xs sm:text-sm mt-0.5 sm:mt-1">Monitoreo global del inventario de activos TI, distribución por áreas organizacionales y regionales.</p>
             </div>
             <div className="bg-primary/10 text-primary px-space-md py-space-xs rounded-lg flex items-center gap-space-sm font-bold shadow-sm text-xs sm:text-sm">
               <span className="material-symbols-outlined text-[18px] sm:text-[20px]">calendar_today</span>
@@ -226,6 +312,128 @@ export default function Dashboard() {
 
           </div>
 
+          {/* ======================================================================== */}
+          {/* PANEL DE SEGMENTACIÓN POR ÁREA / DEPARTAMENTO Y SEDE REGIONAL           */}
+          {/* ======================================================================== */}
+          <div className="bg-surface-container-lowest p-4 sm:p-space-xl rounded-[20px] sm:rounded-[24px] shadow-sm border border-surface-container-high/40 mb-space-xl relative overflow-hidden">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-space-md border-b border-surface-container-high/40 mb-space-lg">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">domain</span>
+                  <h3 className="font-headline-sm text-lg sm:text-xl font-black text-on-surface">
+                    Equipos Cargados por Área / Departamento y Regional
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-on-surface-variant mt-1">
+                  Control segmentado de hardware asignado y disponible por dependencia corporativa. Haz clic en una regional para filtrar o en un área para ver sus equipos en el inventario.
+                </p>
+              </div>
+
+              {/* Píldoras de Filtro por Regional */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRegional('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedRegional === 'all'
+                      ? 'bg-primary text-on-primary shadow-sm'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">public</span>
+                  <span>Todas las Regionales ({equipos.length})</span>
+                </button>
+                {REGIONALES_FILTRO.map((reg) => {
+                  const count = segmentacionDatos.conteoPorRegional[reg.id] || 0;
+                  const active = selectedRegional === reg.id;
+                  return (
+                    <button
+                      key={reg.id}
+                      type="button"
+                      onClick={() => setSelectedRegional(active ? 'all' : reg.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                        active
+                          ? 'bg-secondary text-on-secondary shadow-sm ring-2 ring-secondary/30'
+                          : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+                      }`}
+                    >
+                      <span>{reg.shortLabel}</span>
+                      <span className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${active ? 'bg-white/20 text-white' : 'bg-surface-container-high text-primary'}`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Grid de las 8 Áreas Corporativas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+              {segmentacionDatos.listaAreas.map((item) => {
+                const pct = segmentacionDatos.totalEquiposFiltrados > 0
+                  ? Math.round((item.total / segmentacionDatos.totalEquiposFiltrados) * 100)
+                  : 0;
+                const iconName = AREA_ICONS[item.area] || 'apartment';
+
+                return (
+                  <div
+                    key={item.area}
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      params.set('area', item.area);
+                      if (selectedRegional !== 'all') params.set('regional', selectedRegional);
+                      navigate(`/inventario?${params.toString()}`);
+                    }}
+                    className="group p-space-md rounded-2xl bg-surface-container-low/60 hover:bg-surface-container border border-surface-container-high/50 hover:border-primary/40 transition-all cursor-pointer flex flex-col justify-between shadow-xs hover:shadow-md"
+                    title="Ver equipos de esta área en el Inventario"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+                            <span className="material-symbols-outlined text-[20px]">{iconName}</span>
+                          </div>
+                          <span className="font-label-md font-bold text-on-surface text-xs sm:text-sm leading-tight line-clamp-2">
+                            {item.area}
+                          </span>
+                        </div>
+                        <span className="font-display-lg text-2xl font-black text-primary font-mono shrink-0">
+                          {item.total}
+                        </span>
+                      </div>
+
+                      {/* Barra de participación */}
+                      <div className="w-full h-2 bg-surface-container-high rounded-full overflow-hidden my-2">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 pt-2 border-t border-surface-container-high/40 text-[11px]">
+                      <div className="flex items-center justify-between text-outline">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-secondary"></span>
+                          En custodia: <strong className="text-on-surface">{item.asignados}</strong>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-success"></span>
+                          Stock: <strong className="text-on-surface">{item.disponibles}</strong>
+                        </span>
+                        <span className="font-mono font-bold text-primary">{pct}%</span>
+                      </div>
+                      <div className="flex items-center justify-between text-outline pt-0.5">
+                        <span>Valor cargado:</span>
+                        <span className="font-mono font-bold text-on-surface">{formatCurrencyCOP(item.valorTotal)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
             
             {/* GRÁFICA DE DISTRIBUCIÓN (Responsive: 12 cols en 360/768, 5 cols en 1024) */}
@@ -300,7 +508,7 @@ export default function Dashboard() {
                   <span className="material-symbols-outlined text-secondary bg-secondary/10 p-2 rounded-lg">history</span>
                   Timeline de Actividad
                 </h3>
-                <button onClick={() => navigate('/historial')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 text-primary text-xs sm:text-sm font-bold rounded-lg hover:bg-primary hover:text-on-primary transition-all shadow-sm flex items-center gap-1 cursor-pointer shrink-0">
+                <button onClick={() => navigate('/reportes')} className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 text-primary text-xs sm:text-sm font-bold rounded-lg hover:bg-primary hover:text-on-primary transition-all shadow-sm flex items-center gap-1 cursor-pointer shrink-0">
                   Ver Todo
                   <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                 </button>
